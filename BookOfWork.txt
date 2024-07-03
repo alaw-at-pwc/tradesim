@@ -1,13 +1,18 @@
 Things to add:
 - bots considering what open orders they have
+- certain bots having the ability to place multiple orders at once 
 
 Things to fix:
-- Urgent fix required around rebalacning the parameters in each decision tree
+- Urgent fix required around rebalacning the parameters in each decision tree 
+    - 03/07 - fixed so that orderbooks are more balanced, although further testing is likely needed
 - Look to fix botlogic.py so it can be used as a script to import in, for ease of navigation
+    - 03/07 - seems to have fixed itself. will look to improve this but having multiple separate scripts to improve visibility
 - what happens when user crosses best bid/ask by multiple price levels
+    - 03/07 - tested and seems okay, although the market price indicates that the order price is the market price, need to test to see if it is reflective, and whether the transaction log accurately records the transactions
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
 - parameters around calculation of asset/capital ratio 
+    - 03/07 - made some changes but needs to be more rigorously tested
 - improve and change the logic for each unique decision tree to fit that profile
 - probabilities of various market states 
