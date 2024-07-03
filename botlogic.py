@@ -557,7 +557,7 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             tree5 = "sell"
         elif RI_market_state == "h_bear":
             tree5 = "d_sell"
-        elif RI_market_state == "neutral":
+        elif RI_market_state == "neutral" or RI_market_state == None:
             tree5 = "neither" 
 
         # B.3 - vote counting module. If counts are equal, generate random action
@@ -661,7 +661,7 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
             tree5 = "buy"
         elif PI_market_state == "bear":
             tree5 = "sell"
-        elif PI_market_state == "neutral":
+        elif PI_market_state == "neutral" or PI_market_state == None:
             tree5 = "neither" 
         else:
             tree5 = "neither"
