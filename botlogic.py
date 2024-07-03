@@ -22,9 +22,9 @@ def setup_bot_decision (bot, IB_market_state):
     if state == "active":
         #T.2 - asset-capital ratio tree - for when market key figs are not available
         wealth_asset_ratio = bot["Wealth"] / bot["Asset"] 
-        if wealth_asset_ratio >= 4:
+        if wealth_asset_ratio >= 7:
             tree2 = "buy"
-        elif wealth_asset_ratio < 4:
+        elif wealth_asset_ratio < 7:
             tree2 = "sell"
 
         #T.4 - random risk tree
@@ -99,6 +99,8 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
         elif key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_fail":
             tree6 = "random_order"
             force_flag = "force"
+    else:
+        force_flag = "none"
         
     if state == "active":
         # T.1 - market movement tree
@@ -125,15 +127,15 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
         current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
 
         # Asset-capital ratio tree and PnL - for when it is possible to call from market    
-        if current_capital >= start_capital and avc_benchmark >= 0.07:
+        if current_capital >= start_capital and avc_benchmark >= 0.09:
             tree2 = 'sell'
-        elif current_capital >= start_capital and avc_benchmark < 0.07:
+        elif current_capital >= start_capital and avc_benchmark < 0.09:
             #tree2 = 'd_buy'
             tree2 = 'buy'
-        elif current_capital < start_capital and avc_benchmark >= 0.07:
+        elif current_capital < start_capital and avc_benchmark >= 0.09:
             #tree2 = 'd_sell'
             tree2 = 'sell'
-        elif current_capital < start_capital and avc_benchmark < 0.07:
+        elif current_capital < start_capital and avc_benchmark < 0.09:
             tree2 = 'buy'
 
         # T.3
@@ -287,15 +289,15 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
         current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
 
         # Asset-capital ratio tree and PnL - for when it is possible to call from market    
-        if current_capital >= start_capital and avc_benchmark >= 0.07:
+        if current_capital >= start_capital and avc_benchmark >= 0.09:
             tree2 = 'sell'
-        elif current_capital >= start_capital and avc_benchmark < 0.07:
+        elif current_capital >= start_capital and avc_benchmark < 0.09:
             #tree2 = 'd_buy'
             tree2 = 'buy'
-        elif current_capital < start_capital and avc_benchmark >= 0.07:
+        elif current_capital < start_capital and avc_benchmark >= 0.09:
             #tree2 = 'd_sell'
             tree2 = 'sell'
-        elif current_capital < start_capital and avc_benchmark < 0.07:
+        elif current_capital < start_capital and avc_benchmark < 0.09:
             tree2 = 'buy'
 
         # T.3
@@ -377,15 +379,15 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
     current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
 
     # Asset-capital ratio tree and PnL - for when it is possible to call from market    
-    if current_capital >= start_capital and avc_benchmark >= 0.07:
+    if current_capital >= start_capital and avc_benchmark >= 0.02:
         tree2 = 'sell'
-    elif current_capital >= start_capital and avc_benchmark < 0.07:
+    elif current_capital >= start_capital and avc_benchmark < 0.02:
         #tree2 = 'd_buy'
         tree2 = 'buy'
-    elif current_capital < start_capital and avc_benchmark >= 0.07:
+    elif current_capital < start_capital and avc_benchmark >= 0.02:
         #tree2 = 'd_sell'
         tree2 = 'sell'
-    elif current_capital < start_capital and avc_benchmark < 0.07:
+    elif current_capital < start_capital and avc_benchmark < 0.02:
         tree2 = 'buy'
 
     # T.3
@@ -528,15 +530,15 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
         current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
 
         # Asset-capital ratio tree and PnL - for when it is possible to call from market    
-        if current_capital >= start_capital and avc_benchmark >= 0.07:
+        if current_capital >= start_capital and avc_benchmark >= 0.17:
             tree2 = 'sell'
-        elif current_capital >= start_capital and avc_benchmark < 0.07:
+        elif current_capital >= start_capital and avc_benchmark < 0.17:
             #tree2 = 'd_buy'
             tree2 = 'buy'
-        elif current_capital < start_capital and avc_benchmark >= 0.07:
+        elif current_capital < start_capital and avc_benchmark >= 0.17:
             #tree2 = 'd_sell'
             tree2 = 'sell'
-        elif current_capital < start_capital and avc_benchmark < 0.07:
+        elif current_capital < start_capital and avc_benchmark < 0.17:
             tree2 = 'buy'
 
         # T.4 - wildcard tree
@@ -619,15 +621,15 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
         current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
 
         # Asset-capital ratio tree and PnL - for when it is possible to call from market    
-        if current_capital >= start_capital and avc_benchmark >= 0.07:
+        if current_capital >= start_capital and avc_benchmark >= 0.2:
             tree2 = 'sell'
-        elif current_capital >= start_capital and avc_benchmark < 0.07:
+        elif current_capital >= start_capital and avc_benchmark < 0.2:
             #tree2 = 'd_buy'
             tree2 = 'buy'
-        elif current_capital < start_capital and avc_benchmark >= 0.07:
+        elif current_capital < start_capital and avc_benchmark >= 0.2:
             #tree2 = 'd_sell'
             tree2 = 'sell'
-        elif current_capital < start_capital and avc_benchmark < 0.07:
+        elif current_capital < start_capital and avc_benchmark < 0.2:
             tree2 = 'buy'
 
         # T.3
