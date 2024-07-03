@@ -22,9 +22,9 @@ def setup_bot_decision (bot, IB_market_state):
     if state == "active":
         #T.2 - asset-capital ratio tree - for when market key figs are not available
         wealth_asset_ratio = bot["Wealth"] / bot["Asset"] 
-        if wealth_asset_ratio >= 9:
+        if wealth_asset_ratio >= 11:
             tree2 = "buy"
-        elif wealth_asset_ratio < 9:
+        elif wealth_asset_ratio < 11:
             tree2 = "sell"
 
         #T.4 - random risk tree
@@ -83,6 +83,7 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
         # H1: bot will not trade i.e. test passes, they will be inactive
         # setup to encourage more participation in the market 
     test_val = np.random.random()
+    force_flag = "none"
     if test_val < bot["Risk"]:  
         state = "inactive"
     else: 
