@@ -2,6 +2,8 @@ Things to add:
 - bots considering what open orders they have
 
 Things to fix:
+- Urgent fix required around rebalacning the parameters in each decision tree
+- Look to fix botlogic.py so it can be used as a script to import in, for ease of navigation
 - what happens when user crosses best bid/ask by multiple price levels
 
 Things to tweak:
