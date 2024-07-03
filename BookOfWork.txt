@@ -1,0 +1,11 @@
+Things to add:
+- bots considering what open orders they have
+
+Things to fix:
+- what happens when user crosses best bid/ask by multiple price levels
+
+Things to tweak:
+- how bots decide quantity and price level to place order 
+- parameters around calculation of asset/capital ratio 
+- improve and change the logic for each unique decision tree to fit that profile
+- probabilities of various market states 
