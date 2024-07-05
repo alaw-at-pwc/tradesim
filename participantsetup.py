@@ -48,7 +48,9 @@ def participant_creation (participant_num):
         "Risk" : 0, 
         "Activity" : 0,
         "Delay" : np.random.poisson(lam=2),
-        "Profile" : assigned_profiles
+        "Profile" : assigned_profiles,
+        "PreAsset" : 0,
+        "PreWealth" : 0
     })
 
     def generate_ib():
@@ -98,6 +100,8 @@ def participant_creation (participant_num):
             df_participants.at[index, "Wealth"] = wealth
             df_participants.at[index, "Risk"] = risk
             df_participants.at[index, "Activity"] = activity
+            df_participants.at[index, "PreAsset"] = asset
+            df_participants.at[index, "PreWealth"] = wealth
 
     return df_participants
 
