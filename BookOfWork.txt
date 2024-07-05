@@ -1,4 +1,5 @@
 Things to add:
+- system that updates the graph so that the candlesticks change and represent incresinsgly longer increments of time
 - bots considering what open orders they have
 - IB traders having the possibility to receive client orders - should differentiate into prop and agency traders? 
 - for RI and PI traders, split out into different categories so you have risky and less risky participants, which rely on different trees more than others
