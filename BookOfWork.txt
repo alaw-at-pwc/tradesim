@@ -1,7 +1,5 @@
 Things to add:
 - bots considering what open orders they have
-- certain bots having the ability to place multiple orders at once 
-    - 04/07 - added this functionality in so all bots can should they want to, but not all bots have the ability to generate restuls to do this (only IB and MM currently)
 - IB traders having the possibility to receive client orders - should differentiate into prop and agency traders? 
 - for RI and PI traders, split out into different categories so you have risky and less risky participants, which rely on different trees more than others
 
@@ -9,15 +7,6 @@ Things to fix:
 - Urgent fix required around rebalacning the parameters in each decision tree 
     - 03/07 - fixed so that orderbooks are more balanced, although further testing is likely needed
     - 04/07 - orderbooks seem to be more balanced, but become increasingly top heavy as the simulation progresses 
-- Look to fix botlogic.py so it can be used as a script to import in, for ease of navigation
-    - 03/07 - seems to have fixed itself. will look to improve this but having multiple separate scripts to improve visibility
-    - 04/07 - fixed this, ensure to add disclaimer to clone repository. split out into multiple files now
-- what happens when user crosses best bid/ask by multiple price levels
-    - 03/07 - tested and seems okay, although the market price indicates that the order price is the market price, need to test to see if it is reflective, and whether the transaction log accurately records the transactions
-    - 04/07 - issue has been fixed
-- Fix is required around an output file being produced, as well as the simulation not ending on the timer (if selected)
-    - 04/07 - this has been fixed now
-- Fix on user updates to front end, and correctly updating df_participants after user executes in the market
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
@@ -29,3 +18,18 @@ Things to tweak:
     - 04/07 - made some amendments so that trees are more unique, but can be improved further 
 - probabilities of various market states 
     - 04/07 - seems to make more sense, and it does not cause the market to runaway as often as it did before 
+
+
+Completed items:
+- Look to fix botlogic.py so it can be used as a script to import in, for ease of navigation
+    - 03/07 - seems to have fixed itself. will look to improve this but having multiple separate scripts to improve visibility
+    - 04/07 - fixed this, ensure to add disclaimer to clone repository. split out into multiple files now
+- what happens when user crosses best bid/ask by multiple price levels
+    - 03/07 - tested and seems okay, although the market price indicates that the order price is the market price, need to test to see if it is reflective, and whether the transaction log accurately records the transactions
+    - 04/07 - issue has been fixed
+- Fix is required around an output file being produced, as well as the simulation not ending on the timer (if selected)
+    - 04/07 - this has been fixed now
+- Fix on user updates to front end, and correctly updating df_participants after user executes in the market
+    - 05/07 - fixed so that user profile is updated correctly
+- certain bots having the ability to place multiple orders at once 
+    - 04/07 - added this functionality in so all bots can should they want to, but not all bots have the ability to generate restuls to do this (only IB and MM currently)
