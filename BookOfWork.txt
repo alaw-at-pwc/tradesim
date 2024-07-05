@@ -1,24 +1,22 @@
 Things to add:
-- bots considering what open orders they have
+- bots considering what open orders they have, how this might impact their orders/type of orders, and whether to cancel orders
 - IB traders having the possibility to receive client orders - should differentiate into prop and agency traders? 
 - for RI and PI traders, split out into different categories so you have risky and less risky participants, which rely on different trees more than others
+- ability for user to cancel open orders 
 
 Things to fix:
-- Urgent fix required around rebalacning the parameters in each decision tree 
+- Urgent fix required around rebalancing the parameters in each decision tree 
     - 03/07 - fixed so that orderbooks are more balanced, although further testing is likely needed
-    - 04/07 - orderbooks seem to be more balanced, but become increasingly top heavy as the simulation progresses 
+    - 04/07 - orderbooks seem to be more balanced, but become increasingly top heavy as the simulation progresses - need to reduce number of orders placed at priority 
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
     - 04/07 - made bots have their own ways to decide quantity and price level. however, much of this is still up to chance
-    - Should add a form of strategy, maybe encourage more executions to cause more variation in the price 
+    - Should add a form of strategy, maybe encourage more executions to cause more variation in the price (wihtin reason)
 - parameters around calculation of asset/capital ratio 
     - 03/07 - made some changes but needs to be more rigorously tested
 - improve and change the logic for each unique decision tree to fit that profile
     - 04/07 - made some amendments so that trees are more unique, but can be improved further 
-- probabilities of various market states 
-    - 04/07 - seems to make more sense, and it does not cause the market to runaway as often as it did before 
-
 
 Completed items:
 - Look to fix botlogic.py so it can be used as a script to import in, for ease of navigation
@@ -35,3 +33,5 @@ Completed items:
     - 04/07 - added this functionality in so all bots can should they want to, but not all bots have the ability to generate restuls to do this (only IB and MM currently)
 - system that updates the graph so that the candlesticks change and represent incresinsgly longer increments of time
     - 05/07 - completed this. but chart will break if the sim is run for more than an hour
+- probabilities of various market states 
+    - 04/07 - seems to make more sense, and it does not cause the market to runaway as often as it did before 
