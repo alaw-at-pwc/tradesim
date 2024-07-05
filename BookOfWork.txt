@@ -1,5 +1,4 @@
 Things to add:
-- system that updates the graph so that the candlesticks change and represent incresinsgly longer increments of time
 - bots considering what open orders they have
 - IB traders having the possibility to receive client orders - should differentiate into prop and agency traders? 
 - for RI and PI traders, split out into different categories so you have risky and less risky participants, which rely on different trees more than others
@@ -12,7 +11,7 @@ Things to fix:
 Things to tweak:
 - how bots decide quantity and price level to place order 
     - 04/07 - made bots have their own ways to decide quantity and price level. however, much of this is still up to chance
-    - Should add a form of strategy 
+    - Should add a form of strategy, maybe encourage more executions to cause more variation in the price 
 - parameters around calculation of asset/capital ratio 
     - 03/07 - made some changes but needs to be more rigorously tested
 - improve and change the logic for each unique decision tree to fit that profile
@@ -34,3 +33,5 @@ Completed items:
     - 05/07 - fixed so that user profile is updated correctly
 - certain bots having the ability to place multiple orders at once 
     - 04/07 - added this functionality in so all bots can should they want to, but not all bots have the ability to generate restuls to do this (only IB and MM currently)
+- system that updates the graph so that the candlesticks change and represent incresinsgly longer increments of time
+    - 05/07 - completed this. but chart will break if the sim is run for more than an hour
