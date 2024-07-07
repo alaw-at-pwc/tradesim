@@ -2,7 +2,6 @@ Things to add:
 - bots considering what open orders they have, how this might impact their orders/type of orders, and whether to cancel orders
 - IB traders having the possibility to receive client orders - should differentiate into prop and agency traders? 
 - for RI and PI traders, split out into different categories so you have risky and less risky participants, which rely on different trees more than others
-- ability for user to cancel open orders 
 
 Things to fix:
 - Urgent fix required around rebalancing the parameters in each decision tree 
@@ -35,3 +34,5 @@ Completed items:
     - 05/07 - completed this. but chart will break if the sim is run for more than an hour
 - probabilities of various market states 
     - 04/07 - seems to make more sense, and it does not cause the market to runaway as often as it did before 
+- ability for user to cancel open orders 
+    - 06/07 - added ability, including front end to interact with
