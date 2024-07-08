@@ -7,6 +7,7 @@ Things to fix:
 - Urgent fix required around rebalancing the parameters in each decision tree 
     - 03/07 - fixed so that orderbooks are more balanced, although further testing is likely needed
     - 04/07 - orderbooks seem to be more balanced, but become increasingly top heavy as the simulation progresses - need to reduce number of orders placed at priority 
+- Reorganising creation of orderbook visuals so that order_id is present by default, so that an error cannot be flagged for when user orderbooks are empty, and the user attempts to cancel
 
 Things to tweak:
 - how bots decide quantity and price level to place order 

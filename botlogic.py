@@ -441,6 +441,7 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
         result = "no_decision"
         force_flag = "na"
         tree6 = "none"
+        liquidity_flag = False
 
     # B.3 - vote counting module. If counts are equal, generate random action
     if force_flag == "force" and tree6 == "buy":
