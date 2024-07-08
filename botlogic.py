@@ -480,6 +480,7 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
     return result, bot, state, liquidity_flag
 
 def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
+    emotion_bias = "none"
     # RP - Bernoulli risk probability test:
         # H0: bot will trade i.e. test fails, they will trade 
         # H1: bot will not trade i.e. test passes, they will be inactive
@@ -517,14 +518,18 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
         # Asset-capital ratio tree and PnL - for when it is possible to call from market    
         if current_capital >= start_capital and avc_benchmark >= 0.15:
             tree2 = 'sell'
+            emotion_bias = "positive"
         elif current_capital >= start_capital and avc_benchmark < 0.15:
             #tree2 = 'd_buy'
             tree2 = 'buy'
+            emotion_bias = "positive"
         elif current_capital < start_capital and avc_benchmark >= 0.15:
             #tree2 = 'd_sell'
             tree2 = 'sell'
+            emotion_bias = "negative"
         elif current_capital < start_capital and avc_benchmark < 0.15:
             tree2 = 'buy'
+            emotion_bias = "negative"
 
         # T.4 - wildcard tree
         if bot["Risk"] >= 0.82: # this restricts this tree to the 10th percentile of risk-takers
@@ -543,12 +548,12 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             tree5 = "d_sell"
         elif RI_market_state == "neutral" or RI_market_state == None:
             tree5 = "neither" 
-
+        
         # B.3 - vote counting module. If counts are equal, generate random action
         tree_list = [tree1, tree2, tree4, tree5]
         buy_vote = 0
         sell_vote = 0
-        
+         
         for choice in tree_list:
             if choice == 'buy':
                 buy_vote += 1
@@ -559,9 +564,11 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             elif choice == "d_sell":
                 sell_vote += 2
 
-        # D.1 deciding on type of order, based on number of vote counts
-        def order_type_calc(vote_count):
+        # D.1 deciding on type of order, based on number of vote counts and emotional bias
+        def order_type_calc(vote_count, emotion_bias):
             if vote_count > 2:
+                order_flag = 'execute'
+            elif vote_count == 2 and emotion_bias == "negative": # simulating a form of desperation
                 order_flag = 'execute'
             else:
                 order_flag = 'order'
@@ -573,16 +580,17 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             result = bot_action + "_" + order_flag
         elif buy_vote > sell_vote:
             bot_action = 'buy'
-            order_flag = order_type_calc(buy_vote)
+            order_flag = order_type_calc(buy_vote, emotion_bias)
             result = bot_action + "_" + order_flag
         elif sell_vote > buy_vote:
             bot_action = 'sell'
-            order_flag = order_type_calc(sell_vote)
+            order_flag = order_type_calc(sell_vote, emotion_bias)
             result = bot_action + "_" + order_flag
     else:
         result = "no_decision"
+        emotion_bias = "none"
 
-    return result, bot, state
+    return result, bot, state, emotion_bias
 
 def PI_bot_decision (bot, PI_market_state, key_figs):
     # RP - Bernoulli risk probability test:
