@@ -349,75 +349,84 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
     return result, bot, state
 
 def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
-    # Does not need to pass the Bernoulli risk probability test, as the nature of market makers mean they should always be in the market, ensuring liquidity
-    state = "active"
-    # T.2 - Calculating the asset value/ capital ratio
-    asset_value = key_figs.market_price * bot["Asset"]
-    avc_ratio = asset_value / bot["Wealth"]
-    avc_benchmark = avc_ratio * bot["Risk"]
+    # RP - Bernoulli risk probability test:
+        # H0: bot will trade i.e. test fails, they will trade 
+        # H1: bot will not trade i.e. test passes, they will be inactive
+        # setup to encourage more participation in the market 
+    test_val = np.random.random()
+    if test_val < bot["Risk"]:  
+        state = "inactive"
+    else: 
+        state = "active"
+        
+    if state == "active":
+        # T.2 - Calculating the asset value/ capital ratio
+        asset_value = key_figs.market_price * bot["Asset"]
+        avc_ratio = asset_value / bot["Wealth"]
+        avc_benchmark = avc_ratio * bot["Risk"]
 
-    # Calculating if the bot has made a profit or loss 
-    start_capital = (key_figs.open_price * bot["PreAsset"]) + bot["PreWealth"]
-    current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
+        # Calculating if the bot has made a profit or loss 
+        start_capital = (key_figs.open_price * bot["PreAsset"]) + bot["PreWealth"]
+        current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
 
-    # Asset-capital ratio tree and PnL - for when it is possible to call from market    
-    if current_capital >= start_capital and avc_benchmark >= 0.02:
-        tree2 = 'sell'
-    elif current_capital >= start_capital and avc_benchmark < 0.02:
-        #tree2 = 'd_buy'
-        tree2 = 'buy'
-    elif current_capital < start_capital and avc_benchmark >= 0.02:
-        #tree2 = 'd_sell'
-        tree2 = 'sell'
-    elif current_capital < start_capital and avc_benchmark < 0.02:
-        tree2 = 'buy'
+        # Asset-capital ratio tree and PnL - for when it is possible to call from market    
+        if current_capital >= start_capital and avc_benchmark >= 0.02:
+            tree2 = 'sell'
+        elif current_capital >= start_capital and avc_benchmark < 0.02:
+            #tree2 = 'd_buy'
+            tree2 = 'buy'
+        elif current_capital < start_capital and avc_benchmark >= 0.02:
+            #tree2 = 'd_sell'
+            tree2 = 'sell'
+        elif current_capital < start_capital and avc_benchmark < 0.02:
+            tree2 = 'buy'
 
-    # T.3
-    def top_price_calc ():
-        top_price_dist = key_figs.price_max - key_figs.market_price
-        if top_price_dist <= 0.02:
-            tree3 = 'sell'
+        # T.3
+        def top_price_calc ():
+            top_price_dist = key_figs.price_max - key_figs.market_price
+            if top_price_dist <= 0.02:
+                tree3 = 'sell'
+            else:
+                tree3 = 'buy'
+            return tree3
+        
+        def bot_price_calc ():
+            bot_price_dist = key_figs.market_price - key_figs.price_min    
+            if bot_price_dist <= 0.02:
+                tree3 = 'buy'
+            else:
+                tree3 = 'sell'
+            return tree3
+        if key_figs.abs_price_mvmt > 0:
+            tree3 = top_price_calc()
+        elif key_figs.abs_price_mvmt < 0:
+            tree3 = bot_price_calc()    
         else:
-            tree3 = 'buy'
-        return tree3
-    
-    def bot_price_calc ():
-        bot_price_dist = key_figs.market_price - key_figs.price_min    
-        if bot_price_dist <= 0.02:
-            tree3 = 'buy'
-        else:
-            tree3 = 'sell'
-        return tree3
-    if key_figs.abs_price_mvmt > 0:
-        tree3 = top_price_calc()
-    elif key_figs.abs_price_mvmt < 0:
-        tree3 = bot_price_calc()    
-    else:
-        tree3 = "neither"
+            tree3 = "neither"
 
-    # T.6
-    if key_figs.key_figs_test == 'pass':
-        # Calculating orderbook depth
-        qty_buy_orderbook = buy_orderbook["Quantity"].sum()
-        qty_sell_orderbook = sell_orderbook["Quantity"].sum()
-        orderbook_ratio = qty_buy_orderbook / qty_sell_orderbook
-        if orderbook_ratio < 0.5:
-            tree6 = "d_buy"
-            force_flag = "none"
-        elif orderbook_ratio < 0.2:
-            tree6 = "buy"
-            force_flag = "force"
-        elif orderbook_ratio > 2:
-            tree6 = "d_sell"
-            force_flag = "none"
-        elif orderbook_ratio > 5:
-            tree6 = "sell"
-            force_flag = "force"
-        else: 
-            tree6 = "neither"
-            force_flag = "none"
+        # T.6
+        if key_figs.key_figs_test == 'pass':
+            # Calculating orderbook depth
+            qty_buy_orderbook = buy_orderbook["Quantity"].sum()
+            qty_sell_orderbook = sell_orderbook["Quantity"].sum()
+            orderbook_ratio = qty_buy_orderbook / qty_sell_orderbook
+            if orderbook_ratio < 0.5:
+                tree6 = "d_buy"
+                force_flag = "none"
+            elif orderbook_ratio < 0.2:
+                tree6 = "buy"
+                force_flag = "force"
+            elif orderbook_ratio > 2:
+                tree6 = "d_sell"
+                force_flag = "none"
+            elif orderbook_ratio > 5:
+                tree6 = "sell"
+                force_flag = "force"
+            else: 
+                tree6 = "neither"
+                force_flag = "none"
 
-    if key_figs.key_figs_test == 't_semipass':
+    elif key_figs.key_figs_test == 't_semipass':
         # This forces the bot to make an order in the market if an orderbook is empty, even if inactive
         if key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_pass":
             tree6 = "buy"
@@ -428,6 +437,10 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
         elif key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_fail":
             tree6 = "random_order"
             force_flag = "force"
+    else:
+        result = "no_decision"
+        force_flag = "na"
+        tree6 = "none"
 
     # B.3 - vote counting module. If counts are equal, generate random action
     if force_flag == "force" and tree6 == "buy":
@@ -586,7 +599,7 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             bot_action = 'sell'
             order_flag = order_type_calc(sell_vote, emotion_bias)
             result = bot_action + "_" + order_flag
-    else:
+    elif state == "inactive":
         result = "no_decision"
         emotion_bias = "none"
 
