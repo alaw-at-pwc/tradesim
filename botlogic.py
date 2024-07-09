@@ -375,8 +375,20 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
         state = "inactive"
     else: 
         state = "active"
-        
-    if state == "active":
+
+    if key_figs.key_figs_test == 't_semipass':
+        # This forces the bot to make an order in the market if an orderbook is empty, even if inactive
+        if key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_pass":
+            tree6 = "buy"
+            force_flag = "force"
+        elif key_figs.sell_orderbook_test == "s_fail" and key_figs.buy_orderbook_test == "b_pass":
+            tree6 = "sell"
+            force_flag = "force"
+        elif key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_fail":
+            tree6 = "random_order"
+            force_flag = "force"
+
+    elif state == "active":
         # T.2 - Calculating the asset value/ capital ratio
         asset_value = key_figs.market_price * bot["Asset"]
         avc_ratio = asset_value / bot["Wealth"]
@@ -427,19 +439,7 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
             else: 
                 tree6 = "neither"
                 force_flag = "none"
-
-    elif key_figs.key_figs_test == 't_semipass':
-        # This forces the bot to make an order in the market if an orderbook is empty, even if inactive
-        if key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_pass":
-            tree6 = "buy"
-            force_flag = "force"
-        elif key_figs.sell_orderbook_test == "s_fail" and key_figs.buy_orderbook_test == "b_pass":
-            tree6 = "sell"
-            force_flag = "force"
-        elif key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_fail":
-            tree6 = "random_order"
-            force_flag = "force"
-    else:
+    else:    
         result = "no_decision"
         force_flag = "na"
         tree6 = "none"
