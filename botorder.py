@@ -69,7 +69,7 @@ def IB_order (result, bot, key_figs, force_priority):
         order_quantity = round(random.uniform(0.10, 0.25) * max_sell_quantity)
         input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
-        
+
     elif result == 'sell_order' and bid_ask_spread > 0.02:
         #D.4.1
         order_price = round(key_figs.best_ask - 0.01,2)
@@ -345,19 +345,28 @@ def PI_order (result, bot, key_figs):
     return bot, df_input_orders
 
 # help create liquidity in orderbooks 
-def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook):
+def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, historic_buy_orderbook, historic_sell_orderbook):
     def buy_orderbook_append (timestamp, trader_id, quantity, price, buy_orderbook): 
         new_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : quantity, "Price" : price})
         buy_orderbook = pd.concat([buy_orderbook, new_order.to_frame().T], ignore_index=True)
         buy_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[False, True], inplace=True)
+        h_orderbook_append(new_order, "buy")
         return buy_orderbook
 
     def sell_orderbook_append (timestamp, trader_id, quantity, price, sell_orderbook):
         new_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : quantity, "Price" : price})
         sell_orderbook = pd.concat([sell_orderbook, new_order.to_frame().T], ignore_index=True)
         sell_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[True, True], inplace=True)
+        h_orderbook_append(new_order, "sell")
         return sell_orderbook
-    
+    def h_orderbook_append (input, side):
+        if side == "buy":
+            historic_buy_orderbook = pd.concat([historic_buy_orderbook, input.to_frame().T], ignore_index=True)
+            historic_buy_orderbook.sort_values(by=["Timestamp"], ascending=[True], inplace=True)
+        elif side == "sell":
+            historic_sell_orderbook = pd.concat([historic_buy_orderbook, input.to_frame().T], ignore_index=True)
+            historic_sell_orderbook.sort_values(by=["Timestamp"], ascending=[True], inplace=True)
+        return historic_buy_orderbook, historic_sell_orderbook
     def bot_debiting(bot, input_orders):
         for index, order in input_orders.iterrows():
             qty = int(order["Quantity"])
@@ -416,7 +425,7 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook):
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
     bot = bot_debiting(bot, df_input_orders)
-    return bot, buy_orderbook, sell_orderbook
+    return bot, buy_orderbook, sell_orderbook, historic_buy_orderbook, historic_sell_orderbook
 
 
 

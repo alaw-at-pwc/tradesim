@@ -10,7 +10,9 @@ Things to fix:
 - Urgent fix required around rebalancing the parameters in each decision tree 
     - 03/07 - fixed so that orderbooks are more balanced, although further testing is likely needed
     - 04/07 - orderbooks seem to be more balanced, but become increasingly top heavy as the simulation progresses - need to reduce number of orders placed at priority 
-- Fix required around event handling and threading
+    - 09/07 - likely an issue that both RI and MM are casuing, need to test and change params in order to reduce this behaviour
+- investigated reason for orderbook producing NaNs 
+    - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
 - Test for what happens when orderbooks are emptied out after market setup
 
 Things to tweak:
@@ -45,3 +47,5 @@ Completed items:
     - 09/07 - fixed
 - ability for user to see total open positions 
     - 09/07 - added in 
+- create dataframes that hold the history of orders for both buy and sell
+    - -09/07 - added in but need to change amendments to a merge in order to keep track of entire progress of order 
