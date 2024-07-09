@@ -1,5 +1,6 @@
 # This script takes various market info, and runs the bot through its designated decision tree. 
 import numpy as np
+import pandas as pd
 
 def random_action_gen ():
         order_val = np.random.random()
@@ -8,6 +9,44 @@ def random_action_gen ():
         else:
             action = 'sell'
         return action
+
+def top_price_calc (key_figs):
+    top_price_dist = key_figs.price_max - key_figs.market_price
+    if top_price_dist <= 0.02:
+        tree3 = 'sell'
+    else:
+        tree3 = 'buy'
+    return tree3
+        
+def bot_price_calc (key_figs):
+    bot_price_dist = key_figs.market_price - key_figs.price_min    
+    if bot_price_dist <= 0.02:
+        tree3 = 'buy'
+    else:
+        tree3 = 'sell'
+    return tree3
+
+def order_type_calc(vote_count):
+    if vote_count > 2:
+        order_flag = 'execute'
+    else:
+        order_flag = 'order'
+    return order_flag
+
+# Function that considers what current orders the bot has in the market
+def open_orders(id, orderbook, prio_price):
+    open_prio_orders = False # flags true if there are orders at priority
+    open_np_orders = False # flags true if there are orders away from priority 
+    for index, order in orderbook.iterrows():
+        open_prio_qty = 0
+        open_np_qty = 0
+        if id == order["Trader_ID"] and order["Price"] == prio_price:
+            open_prio_orders = True
+            open_np_qty += order["Quantity"]
+        elif id == order["Trader_ID"] and order["Price"] < prio_price:
+            open_np_orders = True
+            open_np_qty += order["Quantity"]
+    return open_prio_orders, open_prio_qty, open_np_orders, open_np_qty
 
 def setup_bot_decision (bot, IB_market_state):
     # RP - Bernoulli risk probability test:
@@ -55,12 +94,6 @@ def setup_bot_decision (bot, IB_market_state):
                 sell_vote += 1
 
         # D.1 deciding on type of order, based on number of vote counts
-        def order_type_calc(vote_count):
-            if vote_count > 2:
-                order_flag = 'execute'
-            else:
-                order_flag = 'order'
-            return order_flag
         if buy_vote == sell_vote:
             bot_action = random_action_gen()
             order_flag = 'execute'
@@ -84,25 +117,10 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
         # H1: bot will not trade i.e. test passes, they will be inactive
         # setup to encourage more participation in the market 
     test_val = np.random.random()
-    force_flag = "none"
     if test_val < bot["Risk"]:  
         state = "inactive"
     else: 
         state = "active"
-
-    '''if key_figs.key_figs_test == 't_semipass' and state == "inactive":
-        # This forces the bot to make an order in the market if an orderbook is empty, even if inactive
-        if key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_pass":
-            tree6 = "buy"
-            force_flag = "force"
-        elif key_figs.sell_orderbook_test == "s_fail" and key_figs.buy_orderbook_test == "b_pass":
-            tree6 = "sell"
-            force_flag = "force"
-        elif key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_fail":
-            tree6 = "random_order"
-            force_flag = "force"
-    else:
-        force_flag = "none"'''
         
     if state == "active":
         # T.1 - market movement tree
@@ -141,25 +159,10 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
             tree2 = 'buy'
 
         # T.3
-        def top_price_calc ():
-            top_price_dist = key_figs.price_max - key_figs.market_price
-            if top_price_dist <= 0.02:
-                tree3 = 'sell'
-            else:
-                tree3 = 'buy'
-            return tree3
-        
-        def bot_price_calc ():
-            bot_price_dist = key_figs.market_price - key_figs.price_min    
-            if bot_price_dist <= 0.02:
-                tree3 = 'buy'
-            else:
-                tree3 = 'sell'
-            return tree3
         if key_figs.abs_price_mvmt > 0:
-            tree3 = top_price_calc()
+            tree3 = top_price_calc(key_figs)
         elif key_figs.abs_price_mvmt < 0:
-            tree3 = bot_price_calc()    
+            tree3 = bot_price_calc(key_figs)    
         else:
             tree3 = "neither"
 
@@ -186,6 +189,55 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
                 tree6 = "sell"
             else: 
                 tree6 = "neither"
+         
+        # T.IB - Looking at what current orders the trader has in the market
+        open_bb_orders, open_bb_qty, open_bnp_orders, open_bnp_qty = open_orders(bot[0], buy_orderbook, key_figs.best_bid)   
+        open_ba_orders, open_ba_qty, open_snp_orders, open_snp_qty = open_orders(bot[0], sell_orderbook, key_figs.best_ask)
+        buy_side_risk_exposure = open_bnp_qty/bot["Asset"] 
+        sell_side_risk_exposure = open_snp_qty/bot["Asset"]
+
+        exec_buy_order = 0
+        exec_sell_order = 0
+        prio_buy_order = 0
+        prio_sell_order = 0
+
+        if open_bb_orders == True and open_bb_qty > 100:                    # substantial order sitting at priority
+            exec_buy_order += 1                                             # vote for an execute in the market if buy, away from priotiy if sell
+            prio_sell_order += 1
+        elif open_bb_orders == False and open_bnp_orders == True:
+            if buy_side_risk_exposure > 0.25 and open_bnp_qty > 100:        # more than a fifth in the market 
+                prio_buy_order -= 1                                         # vote for an order away from priority, and an execution on sell
+                exec_sell_order += 1
+            elif buy_side_risk_exposure <= 0.25 and open_bnp_qty > 100:     # less than a fifth in the market 
+                prio_buy_order += 1                                         # vote for an order at priority, and an order at priotiy on sell
+                prio_sell_order += 1
+        
+        if open_ba_orders == True and open_ba_qty > 100:                    # same logic as above, but considering any open sell side orders 
+            exec_sell_order += 1
+            prio_buy_order += 1
+        elif open_ba_orders == False and open_snp_orders == True:
+            if sell_side_risk_exposure > 0.25 and open_snp_qty > 100:
+                prio_sell_order -= 1
+                exec_buy_order += 1
+            elif sell_side_risk_exposure <= 0.25 and open_snp_qty > 100:
+                prio_sell_order += 1
+                prio_buy_order += 1
+
+        if exec_buy_order == 2:
+            t_open_order = "buy_execute"
+            force_priortiy = False
+        elif exec_sell_order == 2:
+            t_open_order = "sell_execute"
+            force_priortiy = False
+        elif prio_buy_order == 2:
+            t_open_order = "buy_priority"
+            force_priortiy = True
+        elif prio_sell_order == 2:
+            t_open_order = "sell_priority"
+            force_priortiy = True
+        else:
+            t_open_order = "order"
+            force_priortiy = False
 
         # B.3 - vote counting module. If counts are equal, generate random action
         tree_list = [tree1, tree2, tree3, tree5, tree6]
@@ -202,38 +254,24 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
             elif choice == "d_sell":
                 sell_vote += 2
 
-        # D.1 deciding on type of order, based on number of vote counts
-        def order_type_calc(vote_count):
-            if vote_count > 2:
-                order_flag = 'execute'
-            else:
-                order_flag = 'order'
-            return order_flag
-        
+        # D.1 deciding on type of order, based on number of vote counts   
         if buy_vote == sell_vote:
             result = 'multiple_orders'
-        elif buy_vote > sell_vote:
+        elif (buy_vote > sell_vote and t_open_order == "buy_execute") or (sell_vote > buy_vote and t_open_order == "sell_execute"):
+            result = t_open_order
+        elif buy_vote > sell_vote and (t_open_order == "buy_priority" or t_open_order == "order"):
             bot_action = 'buy'
             order_flag = order_type_calc(buy_vote)
             result = bot_action + "_" + order_flag
-        elif sell_vote > buy_vote:
+        elif sell_vote > buy_vote and (t_open_order == "buy_priority" or t_open_order == "order"):
             bot_action = 'sell'
             order_flag = order_type_calc(sell_vote)
             result = bot_action + "_" + order_flag
     else:
         result = "no_decision"
-
-    '''elif state == "inactive" and force_flag == "force":
-        if tree6 == "buy":
-            result = "buy_order"
-        elif tree6 == "sell":
-            result = "sell_order"
-        elif tree6 == "random_order":
-            bot_action = random_action_gen()
-            order_flag = 'order'
-            result = bot_action + "_" + order_flag'''
+        force_priortiy = False
     
-    return result, bot, state
+    return result, bot, state, force_priortiy
 
 def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
      # RP - Bernoulli risk probability test:
@@ -283,25 +321,10 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
             tree2 = 'buy'
 
         # T.3
-        def top_price_calc ():
-            top_price_dist = key_figs.price_max - key_figs.market_price
-            if top_price_dist <= 0.02:
-                tree3 = 'sell'
-            else:
-                tree3 = 'buy'
-            return tree3
-        
-        def bot_price_calc ():
-            bot_price_dist = key_figs.market_price - key_figs.price_min    
-            if bot_price_dist <= 0.02:
-                tree3 = 'buy'
-            else:
-                tree3 = 'sell'
-            return tree3
         if key_figs.abs_price_mvmt > 0:
-            tree3 = top_price_calc()
+            tree3 = top_price_calc(key_figs)
         elif key_figs.abs_price_mvmt < 0:
-            tree3 = bot_price_calc()    
+            tree3 = bot_price_calc(key_figs)    
         else:
             tree3 = "neither"
 
@@ -326,12 +349,6 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
                 sell_vote += 1
 
         # D.1 deciding on type of order, based on number of vote counts
-        def order_type_calc(vote_count):
-            if vote_count > 2:
-                order_flag = 'execute'
-            else:
-                order_flag = 'order'
-            return order_flag
         if buy_vote == sell_vote:
             bot_action = random_action_gen()
             order_flag = 'execute'
@@ -382,25 +399,10 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
             tree2 = 'buy'
 
         # T.3
-        def top_price_calc ():
-            top_price_dist = key_figs.price_max - key_figs.market_price
-            if top_price_dist <= 0.02:
-                tree3 = 'sell'
-            else:
-                tree3 = 'buy'
-            return tree3
-        
-        def bot_price_calc ():
-            bot_price_dist = key_figs.market_price - key_figs.price_min    
-            if bot_price_dist <= 0.02:
-                tree3 = 'buy'
-            else:
-                tree3 = 'sell'
-            return tree3
         if key_figs.abs_price_mvmt > 0:
-            tree3 = top_price_calc()
+            tree3 = top_price_calc(key_figs)
         elif key_figs.abs_price_mvmt < 0:
-            tree3 = bot_price_calc()    
+            tree3 = bot_price_calc(key_figs)    
         else:
             tree3 = "neither"
 
@@ -472,13 +474,6 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
                 sell_vote += 2
 
         # D.1 deciding on type of order, based on number of vote counts
-        def order_type_calc(vote_count):
-            if vote_count > 2:
-                order_flag = 'execute'
-            else:
-                order_flag = 'order'
-            return order_flag
-        
         if buy_vote == sell_vote:
             bot_action = random_action_gen()
             order_flag = 'execute'
@@ -579,7 +574,7 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
                 sell_vote += 2
 
         # D.1 deciding on type of order, based on number of vote counts and emotional bias
-        def order_type_calc(vote_count, emotion_bias):
+        def RI_order_type_calc(vote_count, emotion_bias):
             if vote_count > 2:
                 order_flag = 'execute'
             elif vote_count == 2 and emotion_bias == "negative": # simulating a form of desperation
@@ -594,11 +589,11 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             result = bot_action + "_" + order_flag
         elif buy_vote > sell_vote:
             bot_action = 'buy'
-            order_flag = order_type_calc(buy_vote, emotion_bias)
+            order_flag = RI_order_type_calc(buy_vote, emotion_bias)
             result = bot_action + "_" + order_flag
         elif sell_vote > buy_vote:
             bot_action = 'sell'
-            order_flag = order_type_calc(sell_vote, emotion_bias)
+            order_flag = RI_order_type_calc(sell_vote, emotion_bias)
             result = bot_action + "_" + order_flag
     elif state == "inactive":
         result = "no_decision"
@@ -640,25 +635,10 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
             tree2 = 'buy'
 
         # T.3
-        def top_price_calc ():
-            top_price_dist = key_figs.price_max - key_figs.market_price
-            if top_price_dist <= 0.02:
-                tree3 = 'sell'
-            else:
-                tree3 = 'buy'
-            return tree3
-        
-        def bot_price_calc ():
-            bot_price_dist = key_figs.market_price - key_figs.price_min    
-            if bot_price_dist <= 0.02:
-                tree3 = 'buy'
-            else:
-                tree3 = 'sell'
-            return tree3
         if key_figs.abs_price_mvmt > 0:
-            tree3 = top_price_calc()
+            tree3 = top_price_calc(key_figs)
         elif key_figs.abs_price_mvmt < 0:
-            tree3 = bot_price_calc()    
+            tree3 = bot_price_calc(key_figs)    
         else:
             tree3 = "neither"
 
@@ -684,13 +664,6 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
                 sell_vote += 1
 
         # D.1 deciding on type of order, based on number of vote counts
-        def order_type_calc(vote_count):
-            if vote_count > 2:
-                order_flag = 'execute'
-            else:
-                order_flag = 'order'
-            return order_flag
-        
         if buy_vote == sell_vote:
             bot_action = random_action_gen()
             order_flag = 'execute'

@@ -22,7 +22,7 @@ def liquidity_levels_calc(levels, prop_min, prop_max):
     order_quantities = -np.sort(-bounded_exponential_randoms) #sorts numbers from highest to lowest
     return order_quantities
 
-def IB_order (result, bot, key_figs):
+def IB_order (result, bot, key_figs, force_priority):
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Timestamp", "Trader_ID", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
@@ -31,7 +31,13 @@ def IB_order (result, bot, key_figs):
     max_sell_quantity = bot["Asset"]
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
 
-    if result == 'buy_order' and bid_ask_spread > 0.02:
+    if result == 'buy_order' and force_priority == True:
+        order_price = round(key_figs.best_bid, 2)
+        order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
+        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+
+    elif result == 'buy_order' and bid_ask_spread > 0.02:
         #D.3.1
         order_price = round(key_figs.best_bid + 0.01,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
@@ -58,6 +64,12 @@ def IB_order (result, bot, key_figs):
         scd_input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : scd_order_quantity, "Price" : scd_order_price, "Flag" : "bid"})
         df_input_orders = pd.concat([df_input_orders, scd_input_order.to_frame().T], ignore_index=True)
 
+    elif result == 'sell_order' and force_priority == True:
+        order_price = round(key_figs.best_ask, 2)
+        order_quantity = round(random.uniform(0.10, 0.25) * max_sell_quantity)
+        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+        
     elif result == 'sell_order' and bid_ask_spread > 0.02:
         #D.4.1
         order_price = round(key_figs.best_ask - 0.01,2)
