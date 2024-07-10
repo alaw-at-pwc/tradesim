@@ -9,7 +9,6 @@ Things to add:
 Things to fix:
 - investigated reason for orderbook producing NaNs 
     - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
-- simulation slows down as it progresses - likely caused by the history dataframes - maybe seek a light way to do this (dictionary?)
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
@@ -52,3 +51,7 @@ Completed items:
     - 04/07 - orderbooks seem to be more balanced, but become increasingly top heavy as the simulation progresses - need to reduce number of orders placed at priority 
     - 09/07 - likely an issue that both RI and MM are casuing, need to test and change params in order to reduce this behaviour
     - 09/07 - fixed so that priority price level is not clogged with orders. further testing needed but for now is solved
+- simulation slows down as it progresses - likely caused by the history dataframes - maybe seek a light way to do this (dictionary?)
+    - 10/07 - sim speed seems to be fairly consistent
+- user profile - round all numbers to 2dp, and also check if cancellling orders is working, i suspect an issue when it comes to ammending the historic orderbook
+    - 10/07 - fixed although it is a bit slow to cancel orders/ execute any user interaction
