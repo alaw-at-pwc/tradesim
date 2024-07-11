@@ -1,7 +1,7 @@
 Things to add:
 - bots considering what open orders they have, how this might impact their orders/type of orders, and whether to cancel orders
     - 09/07 - IB traders will consider what open orders they have and will factor this into their decision making. however, no order cancellations are in the logic
-- IB traders having the possibility to receive client orders - should differentiate into prop and agency traders? 
+- ability in setup to choose between a candlestick and a price line graph (mpf.plot(daily, type='line'))
 - for RI and PI traders, split out into different categories so you have risky and less risky participants, which rely on different trees more than others
 - some bots should consider trading volumes to inform decisions too 
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
@@ -9,6 +9,7 @@ Things to add:
 Things to fix:
 - investigated reason for orderbook producing NaNs 
     - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
+- reconfigure orderbooks to include order id, and for the historic orderbook to be just one orderbook, with the associated orderIDs and new columns (order version, order side etc.)
 
 Things to tweak:
 - how bots decide quantity and price level to place order 

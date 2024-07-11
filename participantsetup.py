@@ -53,33 +53,36 @@ def participant_creation (participant_num):
         "PreWealth" : 0
     })
 
+    df_participants["Risk"] = df_participants["Risk"].astype(float) 
+    df_participants["Activity"] = df_participants["Activity"].astype(float)
+
     def generate_ib():
         asset = np.random.randint(500,1000)
-        wealth = np.random.randint(5000,10000),
+        wealth = np.random.randint(5000,10000)
         risk = np.random.uniform(0.01, 0.35)
         activity = np.random.uniform(0.60, 0.90)
         return asset, wealth, risk, activity 
     def generate_wm():
         asset = np.random.randint(400,800)
-        wealth = np.random.randint(5000,9000),
+        wealth = np.random.randint(5000,9000)
         risk = np.random.uniform(0.01, 0.25)
         activity = np.random.uniform(0.01, 0.30)
         return asset, wealth, risk, activity 
     def generate_mm():
         asset = np.random.randint(100,500)
-        wealth = np.random.randint(6000,12000),
+        wealth = np.random.randint(6000,12000)
         risk = np.random.uniform(0.01, 0.10)
         activity = np.random.uniform(0.70, 0.90)
         return asset, wealth, risk, activity 
     def generate_ri():
         asset = np.random.randint(1,200)
-        wealth = np.random.randint(500,4000),
+        wealth = np.random.randint(500,4000)
         risk = np.random.uniform(0.50, 1.0)
         activity = np.random.uniform(0.30, 0.80)
         return asset, wealth, risk, activity 
     def generate_pi():
         asset = np.random.randint(50,400)
-        wealth = np.random.randint(1000,5000),
+        wealth = np.random.randint(1000,5000)
         risk = np.random.uniform(0.30, 0.70)
         activity = np.random.uniform(0.20, 0.50)
         return asset, wealth, risk, activity 
@@ -96,12 +99,12 @@ def participant_creation (participant_num):
     for update in updates:
         for index, row in df_participants.loc[update['condition']].iterrows():
             asset, wealth, risk, activity = update['generate_values']()
-            df_participants.at[index, "Asset"] = asset
-            df_participants.at[index, "Wealth"] = wealth
-            df_participants.at[index, "Risk"] = risk
-            df_participants.at[index, "Activity"] = activity
-            df_participants.at[index, "PreAsset"] = asset
-            df_participants.at[index, "PreWealth"] = wealth
+            df_participants.at[index, "Asset"] = int(asset)
+            df_participants.at[index, "Wealth"] = int(wealth)
+            df_participants.at[index, "Risk"] = float(risk)
+            df_participants.at[index, "Activity"] = float(activity)
+            df_participants.at[index, "PreAsset"] = int(asset)
+            df_participants.at[index, "PreWealth"] = int(wealth)
 
     return df_participants
 

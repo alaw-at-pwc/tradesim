@@ -130,9 +130,9 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
         else:
             prev_price = transaction_log.iat[-1,4]
         market_delta = prev_price - key_figs.market_price
-        if market_delta > 0.02:
+        if market_delta >= 0.02:
             tree1 = 'sell'
-        elif market_delta < -0.02:
+        elif market_delta <= -0.02:
             tree1 = 'buy'
         else:
             tree1 = 'neither'
@@ -191,8 +191,8 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
                 tree6 = "neither"
          
         # T.IB - Looking at what current orders the trader has in the market
-        open_bb_orders, open_bb_qty, open_bnp_orders, open_bnp_qty = open_orders(bot[0], buy_orderbook, key_figs.best_bid)   
-        open_ba_orders, open_ba_qty, open_snp_orders, open_snp_qty = open_orders(bot[0], sell_orderbook, key_figs.best_ask)
+        open_bb_orders, open_bb_qty, open_bnp_orders, open_bnp_qty = open_orders(bot.iloc[0], buy_orderbook, key_figs.best_bid)   
+        open_ba_orders, open_ba_qty, open_snp_orders, open_snp_qty = open_orders(bot.iloc[0], sell_orderbook, key_figs.best_ask)
         buy_side_risk_exposure = open_bnp_qty/bot["Asset"] 
         sell_side_risk_exposure = open_snp_qty/bot["Asset"]
 
@@ -292,9 +292,9 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
         else:
             prev_price = transaction_log.iat[-1,4]
         market_delta = prev_price - key_figs.market_price
-        if market_delta > 0.02:
+        if market_delta >= 0.02:
             tree1 = 'sell'
-        elif market_delta < -0.02:
+        elif market_delta <= -0.02:
             tree1 = 'buy'
         else:
             tree1 = 'neither'
@@ -339,7 +339,7 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
             tree5 = "neither"
 
         # B.3 - vote counting module. If counts are equal, generate random action 
-        tree_list = [tree2, tree3, tree5]
+        tree_list = [tree1, tree2, tree3, tree5]
         buy_vote = 0
         sell_vote = 0
         for choice in tree_list:
@@ -508,9 +508,9 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
         else:
             prev_price = transaction_log.iat[-1,4]
         market_delta = prev_price - key_figs.market_price
-        if market_delta > 0.02:
+        if market_delta >= 0.02:
             tree1 = 'sell'
-        elif market_delta < -0.02:
+        elif market_delta <= -0.02:
             tree1 = 'buy'
         else:
             tree1 = 'neither'
@@ -529,12 +529,12 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             tree2 = 'sell'
             emotion_bias = "positive"
         elif current_capital >= start_capital and avc_benchmark < 0.15:
-            #tree2 = 'd_buy'
-            tree2 = 'buy'
+            tree2 = 'd_buy'
+            #tree2 = 'buy'
             emotion_bias = "positive"
         elif current_capital < start_capital and avc_benchmark >= 0.15:
-            #tree2 = 'd_sell'
-            tree2 = 'sell'
+            tree2 = 'd_sell'
+            #tree2 = 'sell'
             emotion_bias = "negative"
         elif current_capital < start_capital and avc_benchmark < 0.15:
             tree2 = 'buy'
