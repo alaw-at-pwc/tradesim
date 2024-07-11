@@ -7,6 +7,8 @@ Things to add:
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 
 Things to fix:
+- need to review input order format so that is consistnely in the correct order, and so the trader id and timestamp columns are being filled correctly
+- need to ammend transaction log write up to include order ids
 - investigated reason for orderbook producing NaNs 
     - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
 - reconfigure orderbooks to include order id, and for the historic orderbook to be just one orderbook, with the associated orderIDs and new columns (order version, order side etc.)
