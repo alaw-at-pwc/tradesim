@@ -167,7 +167,8 @@ def WM_order (result, bot, key_figs):
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.15, 0.25) * max_sell_quantity)
         input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
-    df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+    if not input_order.empty:
+        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
 
 def MM_order (result, bot, key_figs, liquidity_flag):
@@ -229,7 +230,8 @@ def MM_order (result, bot, key_figs, liquidity_flag):
             order_price = key_figs.best_bid
             order_quantity = round(random.uniform(0.20, 0.35) * max_sell_quantity)
             input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
-        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+        if not input_order.empty:
+            df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     return bot, df_input_orders
 
@@ -291,8 +293,8 @@ def RI_order (result, bot, key_figs, emotion_bias):
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.30, 0.60) * max_sell_quantity)
         input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp,  "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
-
-    df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+    if not input_order.empty:
+        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
 
 def PI_order (result, bot, key_figs):
@@ -341,7 +343,8 @@ def PI_order (result, bot, key_figs):
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.15, 0.25) * max_sell_quantity)
         input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
-    df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+    if not input_order.empty:
+        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
 
 # help create liquidity in orderbooks 

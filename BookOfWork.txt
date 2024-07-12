@@ -7,11 +7,10 @@ Things to add:
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 
 Things to fix:
-- need to review input order format so that is consistnely in the correct order, and so the trader id and timestamp columns are being filled correctly
 - need to ammend transaction log write up to include order ids
+    - -12/07 - need to also add in orders that are executed immediately to be written to the orderbook_log too, and generate and associate order_id
 - investigated reason for orderbook producing NaNs 
     - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
-- reconfigure orderbooks to include order id, and for the historic orderbook to be just one orderbook, with the associated orderIDs and new columns (order version, order side etc.)
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
@@ -58,3 +57,7 @@ Completed items:
     - 10/07 - sim speed seems to be fairly consistent
 - user profile - round all numbers to 2dp, and also check if cancellling orders is working, i suspect an issue when it comes to ammending the historic orderbook
     - 10/07 - fixed although it is a bit slow to cancel orders/ execute any user interaction
+- reconfigure orderbooks to include order id, and for the historic orderbook to be just one orderbook, with the associated orderIDs and new columns (order version, order side etc.)
+    - 12/07 - added this in and is functioning
+- need to review input order format so that is consistnely in the correct order, and so the trader id and timestamp columns are being filled correctly
+    - 12/07 - fixed in line with the above
