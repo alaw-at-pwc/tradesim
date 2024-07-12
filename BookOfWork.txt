@@ -8,7 +8,8 @@ Things to add:
 
 Things to fix:
 - need to ammend transaction log write up to include order ids
-    - -12/07 - need to also add in orders that are executed immediately to be written to the orderbook_log too, and generate and associate order_id
+    - 12/07 - need to also add in orders that are executed immediately to be written to the orderbook_log too, and generate and associate order_id
+    - 12/07 - transaction log now records ids. however, some orders are not being recorded as filled as accordingly, and NaN issue in orderbooks persists
 - investigated reason for orderbook producing NaNs 
     - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
 

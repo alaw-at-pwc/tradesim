@@ -367,6 +367,7 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
         to_log = pd.Series(new_order)
         orderbook_log = pd.concat([orderbook_log, to_log.to_frame().T], ignore_index=True)
         return buy_orderbook, orderbook_log
+    
     def sell_orderbook_append ( trader_id, timestamp, quantity, price, sell_orderbook, orderbook_log):
         if len(orderbook_log) < 1:
             order_id = 1
