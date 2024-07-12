@@ -351,7 +351,6 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
             order_id = 1
         else:
             order_id = orderbook_log.iloc[-1,0] + 1
-
         # appending order to the live buy orderbook
         timestamp = pd.to_datetime(timestamp)
         new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price}
@@ -370,7 +369,6 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
             order_id = 1
         else:
             order_id = orderbook_log.iloc[-1,0] + 1
-
         # appending order to the live sell orderbook
         timestamp = pd.to_datetime(timestamp)
         new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price}
