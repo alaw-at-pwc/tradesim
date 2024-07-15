@@ -4,15 +4,6 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 
-# debiting function - takes order info, and debits the money or asset accordinlgy, from the bot
-def bot_debiting (bot, price, quantity, result, df_participants):
-    if result == "buy_order" or result == "buy_execute":
-        order_value = price * quantity
-        df_participants.loc[df_participants["Trader_ID"] == bot["Trader_ID"], "Wealth"] -= order_value
-        
-    elif result == "sell_order" or result == "sell_execute":        
-        df_participants.loc[df_participants["Trader_ID"] == bot["Trader_ID"], "Asset"] -= quantity
-
 # deciding order qty levels across multiple price levels
 def liquidity_levels_calc(levels, prop_min, prop_max):
     scale = 0.1
@@ -49,7 +40,7 @@ def IB_order (result, bot, key_figs, force_priority):
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_bid - offset,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     elif result == 'buy_execute':
@@ -273,26 +264,26 @@ def RI_order (result, bot, key_figs, emotion_bias):
         #D.4.1
         order_price = round(key_figs.best_ask - 0.01,2)
         order_quantity = round(random.uniform(0.15, 0.35) * max_sell_quantity)
-        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp,  "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_order' and bid_ask_spread <= 0.02:
         #D.4.2
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_ask + offset,2)
         order_quantity = round(random.uniform(0.15, 0.35) * max_sell_quantity)
-        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp,  "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_execute' and emotion_bias == "negative":
         #D.5.2
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.25, 0.50) * max_sell_quantity)
-        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp,  "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_execute' and emotion_bias == "positive":
         #D.5.2
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.30, 0.60) * max_sell_quantity)
-        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp,  "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
     if not input_order.empty:
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
