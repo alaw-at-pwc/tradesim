@@ -10,8 +10,9 @@ Things to fix:
 - need to ammend transaction log write up to include order ids
     - 12/07 - need to also add in orders that are executed immediately to be written to the orderbook_log too, and generate and associate order_id
     - 12/07 - transaction log now records ids. however, some orders are not being recorded as filled as accordingly, and NaN issue in orderbooks persists
-- investigated reason for orderbook producing NaNs 
-    - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
+    - 17/07 - this has been resolved, only issue is after an aggressive execution with left over quantity, child orders are not updated to being closed - need to add differentiating for different fills
+- need to fix graph recalculation during candlestick changes 
+    - 17/07 - need to keep timestamp as index either consistently, or just for when updating the front_end df
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
@@ -62,3 +63,5 @@ Completed items:
     - 12/07 - added this in and is functioning
 - need to review input order format so that is consistnely in the correct order, and so the trader id and timestamp columns are being filled correctly
     - 12/07 - fixed in line with the above
+- investigated reason for orderbook producing NaNs 
+    - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
