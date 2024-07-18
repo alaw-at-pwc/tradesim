@@ -132,6 +132,14 @@ def iteration_start(df_participants):
         if  row["Profile"] in bot_profiles and row["Delay"] == 0:
             df_available = pd.concat([df_available, row.to_frame().T], ignore_index=True)
             # df_available = df_available.astype({"Trader_ID":int, "Asset":float, "Wealth":float, "Risk":float, "Activity":float, "Delay":int})
+            df_available = df_available.sample(frac = 1)       
+    return df_available
+
+def mm_liquidity_fill(df_participants):
+    df_available = pd.DataFrame()
+    bot_profile = ["Market Maker"]
+    for index, row in df_participants.iterrows():
+        if row["Profile"] in bot_profile:
+            df_available = pd.concat([df_available, row.to_frame().T], ignore_index=True)
             df_available = df_available.sample(frac = 1)
-            
     return df_available
