@@ -5,20 +5,14 @@ Things to add:
 - for RI and PI traders, split out into different categories so you have risky and less risky participants, which rely on different trees more than others
 - some bots should consider trading volumes to inform decisions too 
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
+- library list with current versions
 
 Things to fix:
-- investigated reason for orderbook producing NaNs 
-    - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
-- reconfigure orderbooks to include order id, and for the historic orderbook to be just one orderbook, with the associated orderIDs and new columns (order version, order side etc.)
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
     - 04/07 - made bots have their own ways to decide quantity and price level. however, much of this is still up to chance
-    - Should add a form of strategy, maybe encourage more executions to cause more variation in the price (wihtin reason)
-- parameters around calculation of asset/capital ratio 
-    - 03/07 - made some changes but needs to be more rigorously tested
-- improve and change the logic for each unique decision tree to fit that profile
-    - 04/07 - made some amendments so that trees are more unique, but can be improved further 
+    - Should add a form of strategy, maybe encourage more executions to cause more variation in the price (wihtin reason) - should enoucrage more buy executions to happen, as price tends to trend downwards
 
 Completed items:
 - Look to fix botlogic.py so it can be used as a script to import in, for ease of navigation
@@ -56,3 +50,22 @@ Completed items:
     - 10/07 - sim speed seems to be fairly consistent
 - user profile - round all numbers to 2dp, and also check if cancellling orders is working, i suspect an issue when it comes to ammending the historic orderbook
     - 10/07 - fixed although it is a bit slow to cancel orders/ execute any user interaction
+- reconfigure orderbooks to include order id, and for the historic orderbook to be just one orderbook, with the associated orderIDs and new columns (order version, order side etc.)
+    - 12/07 - added this in and is functioning
+- need to review input order format so that is consistnely in the correct order, and so the trader id and timestamp columns are being filled correctly
+    - 12/07 - fixed in line with the above
+- investigated reason for orderbook producing NaNs 
+    - 09/07 - likely an error caused by an execution at the best_bid, and the left over order not being properly written to the orderbook. 
+- need to fix graph recalculation during candlestick changes 
+    - 17/07 - need to keep timestamp as index either consistently, or just for when updating the front_end df
+    - 18/07 - fixed and working
+- parameters around calculation of asset/capital ratio 
+    - 03/07 - made some changes but needs to be more rigorously tested
+- improve and change the logic for each unique decision tree to fit that profile
+    - 04/07 - made some amendments so that trees are more unique, but can be improved further 
+- need to ammend transaction log write up to include order ids
+    - 12/07 - need to also add in orders that are executed immediately to be written to the orderbook_log too, and generate and associate order_id
+    - 12/07 - transaction log now records ids. however, some orders are not being recorded as filled as accordingly, and NaN issue in orderbooks persists
+    - 17/07 - this has been resolved, only issue is after an aggressive execution with left over quantity, child orders are not updated to being closed - need to add differentiating for different fills
+    - 18/07 - primarily fixed - minor bug persists with quantity rewrites - standardise timestamp datatype to fix
+    - 19/07 - fixed, sometimes produces negative quantity on sell side (look into, but otherwise working)

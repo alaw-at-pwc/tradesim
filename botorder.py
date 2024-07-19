@@ -4,15 +4,6 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 
-# debiting function - takes order info, and debits the money or asset accordinlgy, from the bot
-def bot_debiting (bot, price, quantity, result, df_participants):
-    if result == "buy_order" or result == "buy_execute":
-        order_value = price * quantity
-        df_participants.loc[df_participants["Trader_ID"] == bot["Trader_ID"], "Wealth"] -= order_value
-        
-    elif result == "sell_order" or result == "sell_execute":        
-        df_participants.loc[df_participants["Trader_ID"] == bot["Trader_ID"], "Asset"] -= quantity
-
 # deciding order qty levels across multiple price levels
 def liquidity_levels_calc(levels, prop_min, prop_max):
     scale = 0.1
@@ -24,7 +15,7 @@ def liquidity_levels_calc(levels, prop_min, prop_max):
 
 def IB_order (result, bot, key_figs, force_priority):
     # D.2, D.3, D.4
-    df_input_orders = pd.DataFrame(columns=["Timestamp", "Trader_ID", "Quantity", "Price", "Flag"])
+    df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = bot["Wealth"] / key_figs.market_price
@@ -34,14 +25,14 @@ def IB_order (result, bot, key_figs, force_priority):
     if result == 'buy_order' and force_priority == True:
         order_price = round(key_figs.best_bid, 2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     elif result == 'buy_order' and bid_ask_spread > 0.02:
         #D.3.1
         order_price = round(key_figs.best_bid + 0.01,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     elif result == 'buy_order' and bid_ask_spread <= 0.02:
@@ -49,32 +40,32 @@ def IB_order (result, bot, key_figs, force_priority):
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_bid - offset,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     elif result == 'buy_execute':
         #D.5.1
         order_price = key_figs.best_ask
         order_quantity = round(random.uniform(0.15, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
         scd_order_price = round(key_figs.best_bid,2)
         scd_order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
-        scd_input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : scd_order_quantity, "Price" : scd_order_price, "Flag" : "bid"})
+        scd_input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : scd_order_quantity, "Price" : scd_order_price, "Flag" : "bid"})
         df_input_orders = pd.concat([df_input_orders, scd_input_order.to_frame().T], ignore_index=True)
 
     elif result == 'sell_order' and force_priority == True:
         order_price = round(key_figs.best_ask, 2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     elif result == 'sell_order' and bid_ask_spread > 0.02:
         #D.4.1
         order_price = round(key_figs.best_ask - 0.01,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     elif result == 'sell_order' and bid_ask_spread <= 0.02:
@@ -82,19 +73,19 @@ def IB_order (result, bot, key_figs, force_priority):
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_ask + offset,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     elif result == 'sell_execute':
         #D.5.2
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.15, 0.25) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
         scd_order_price = round(key_figs.best_ask,2)
         scd_order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
-        scd_input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : scd_order_quantity, "Price" : scd_order_price, "Flag" : "ask"})
+        scd_input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : scd_order_quantity, "Price" : scd_order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, scd_input_order.to_frame().T], ignore_index=True)
 
     elif result == 'multiple_orders':
@@ -105,7 +96,7 @@ def IB_order (result, bot, key_figs, force_priority):
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_bid - p_level_counter,2)
                 order_quantity = round(order_qty * max_buy_quantity)
-                input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+                input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
                 df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
                 p_level_counter += 0.01
         num_sell_orders = np.random.randint(0,3)
@@ -115,7 +106,7 @@ def IB_order (result, bot, key_figs, force_priority):
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_ask + p_level_counter,2)
                 order_quantity = round(order_qty * max_sell_quantity)
-                input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+                input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
                 df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
                 p_level_counter += 0.01
 
@@ -123,7 +114,7 @@ def IB_order (result, bot, key_figs, force_priority):
 
 def WM_order (result, bot, key_figs):
     # D.2, D.3, D.4
-    df_input_orders = pd.DataFrame(columns=["Timestamp", "Trader_ID", "Quantity", "Price", "Flag"])
+    df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = bot["Wealth"] / key_figs.market_price
@@ -134,45 +125,46 @@ def WM_order (result, bot, key_figs):
         #D.3.1
         order_price = round(key_figs.best_bid + 0.01,2)
         order_quantity = round(random.uniform(0.15, 0.30) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'buy_order' and bid_ask_spread <= 0.02:
         #D.3.2
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_bid - offset,2)
         order_quantity = round(random.uniform(0.15, 0.30) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'buy_execute':
         #D.5.1
         order_price = key_figs.best_ask
         order_quantity = round(random.uniform(0.15, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'sell_order' and bid_ask_spread >= 0.02:
         #D.4.1
         order_price = round(key_figs.best_ask - 0.01,2)
         order_quantity = round(random.uniform(0.15, 0.30) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_order' and bid_ask_spread < 0.02:
         #D.4.2
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_ask + offset,2)
         order_quantity = round(random.uniform(0.15, 0.30) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_execute':
         #D.5.2
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.15, 0.25) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
-    df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+    if not input_order.empty:
+        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
 
 def MM_order (result, bot, key_figs, liquidity_flag):
     # D.2, D.3, D.4
-    df_input_orders = pd.DataFrame(columns=["Timestamp", "Trader_ID", "Quantity", "Price", "Flag"])
+    df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = bot["Wealth"] / key_figs.market_price
@@ -187,7 +179,7 @@ def MM_order (result, bot, key_figs, liquidity_flag):
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_bid - p_level_counter,2)
                 order_quantity = round(order_qty * max_buy_quantity)
-                input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+                input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
                 df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
                 p_level_counter += 0.01
 
@@ -195,7 +187,7 @@ def MM_order (result, bot, key_figs, liquidity_flag):
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_ask + p_level_counter,2)
                 order_quantity = round(order_qty * max_sell_quantity)
-                input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+                input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
                 df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
                 p_level_counter += 0.01
             
@@ -203,39 +195,40 @@ def MM_order (result, bot, key_figs, liquidity_flag):
         if result == 'buy_order' and bid_ask_spread > 0.2:
             order_price = round(key_figs.best_bid + 0.01, 2)
             order_quantity = round(random.uniform(0.20, 0.40) * max_buy_quantity)
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
         
         elif result == 'buy_order' and bid_ask_spread <= 0.2:
             order_price = round(key_figs.best_bid,2)
             order_quantity = round(random.uniform(0.05, 0.20) * max_buy_quantity)
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
         elif result == 'buy_execute':
             order_price = key_figs.best_ask
             order_quantity = round(random.uniform(0.20, 0.35) * max_buy_quantity)
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
         elif result == 'sell_order' and bid_ask_spread > 0.2:
             order_price = round(key_figs.best_ask - 0.01, 2)
             order_quantity = round(random.uniform(0.20, 0.40) * max_sell_quantity)
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
         elif result == 'sell_order' and bid_ask_spread <= 0.2:
             order_price = round(key_figs.best_ask, 2)
             order_quantity = round(random.uniform(0.05, 0.20) * max_sell_quantity)
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
         elif result == 'sell_execute':
             order_price = key_figs.best_bid
             order_quantity = round(random.uniform(0.20, 0.35) * max_sell_quantity)
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
-        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        if not input_order.empty:
+            df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
     return bot, df_input_orders
 
 def RI_order (result, bot, key_figs, emotion_bias):
     # D.2, D.3, D.4
-    df_input_orders = pd.DataFrame(columns=["Timestamp", "Trader_ID", "Quantity", "Price", "Flag"])
+    df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = (bot["Wealth"] * bot["Risk"]) / key_figs.market_price
@@ -246,58 +239,58 @@ def RI_order (result, bot, key_figs, emotion_bias):
         #D.3.1
         order_price = round(key_figs.best_bid + 0.01,2)
         order_quantity = round(random.uniform(0.15, 0.35) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'buy_order' and bid_ask_spread <= 0.02:
         #D.3.2
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_bid - offset,2)
         order_quantity = round(random.uniform(0.15, 0.35) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'buy_execute' and emotion_bias == "negative":
         #D.5.1
         order_price = key_figs.best_ask
         order_quantity = round(random.uniform(0.25, 0.50) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'buy_execute' and emotion_bias == "positive":
         #D.5.1
         order_price = key_figs.best_ask
         order_quantity = round(random.uniform(0.30, 0.60) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'sell_order' and bid_ask_spread > 0.02:
         #D.4.1
         order_price = round(key_figs.best_ask - 0.01,2)
         order_quantity = round(random.uniform(0.15, 0.35) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_order' and bid_ask_spread <= 0.02:
         #D.4.2
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_ask + offset,2)
         order_quantity = round(random.uniform(0.15, 0.35) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_execute' and emotion_bias == "negative":
         #D.5.2
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.25, 0.50) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_execute' and emotion_bias == "positive":
         #D.5.2
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.30, 0.60) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
-
-    df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+    if not input_order.empty:
+        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
 
 def PI_order (result, bot, key_figs):
     # D.2, D.3, D.4
-    df_input_orders = pd.DataFrame(columns=["Timestamp", "Trader_ID", "Quantity", "Price", "Flag"])
+    df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = (bot["Wealth"] * bot["Risk"]) / key_figs.market_price
@@ -308,64 +301,82 @@ def PI_order (result, bot, key_figs):
         #D.3.1
         order_price = round(key_figs.best_bid + 0.01,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'buy_order' and bid_ask_spread <= 0.02:
         #D.3.2
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_bid - offset,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'buy_execute':
         #D.5.1
         order_price = key_figs.best_ask
         order_quantity = round(random.uniform(0.15, 0.25) * max_buy_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
 
     elif result == 'sell_order' and bid_ask_spread > 0.02:
         #D.4.1
         order_price = round(key_figs.best_ask - 0.01,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_order' and bid_ask_spread <= 0.02:
         #D.4.2
         offset = round(abs(np.random.standard_normal()) * 4) * 0.01 
         order_price = round(key_figs.best_ask + offset,2)
         order_quantity = round(random.uniform(0.10, 0.25) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
     elif result == 'sell_execute':
         #D.5.2
         order_price = key_figs.best_bid
         order_quantity = round(random.uniform(0.15, 0.25) * max_sell_quantity)
-        input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
-    df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+        input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+    if not input_order.empty:
+        df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
 
 # help create liquidity in orderbooks 
-def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, historic_buy_orderbook, historic_sell_orderbook):
-    def h_orderbook_append (input, side, historic_orderbook):
-        if side == "buy":
-            historic_orderbook = pd.concat([historic_orderbook, input.to_frame().T], ignore_index=True)
-            historic_orderbook.sort_values(by=["Timestamp"], ascending=[True], inplace=True)
-        elif side == "sell":
-            historic_orderbook = pd.concat([historic_orderbook, input.to_frame().T], ignore_index=True)
-            historic_orderbook.sort_values(by=["Timestamp"], ascending=[True], inplace=True)
-        return historic_orderbook
-    def buy_orderbook_append (timestamp, trader_id, quantity, price, buy_orderbook, historic_buy_orderbook): 
-        new_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : quantity, "Price" : price})
-        buy_orderbook = pd.concat([buy_orderbook, new_order.to_frame().T], ignore_index=True)
+def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_log):
+    def buy_orderbook_append ( trader_id, timestamp, quantity, price, buy_orderbook, orderbook_log): 
+        if len(orderbook_log) < 1:
+            order_id = 1
+        else:
+            order_id = orderbook_log.iloc[-1,0] + 1
+        # appending order to the live buy orderbook
+        timestamp = pd.to_datetime(timestamp)
+        new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price}
+        to_orderbook = pd.Series(new_order)
+        buy_orderbook = pd.concat([buy_orderbook, to_orderbook.to_frame().T], ignore_index=True)
         buy_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[False, True], inplace=True)
-        historic_buy_orderbook = h_orderbook_append(new_order, "buy", historic_buy_orderbook)
-        return buy_orderbook, historic_buy_orderbook
-    def sell_orderbook_append (timestamp, trader_id, quantity, price, sell_orderbook, historic_sell_orderbook):
-        new_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : quantity, "Price" : price})
-        sell_orderbook = pd.concat([sell_orderbook, new_order.to_frame().T], ignore_index=True)
+        buy_orderbook["Timestamp"] = pd.to_datetime(buy_orderbook["Timestamp"])
+
+        # appending order to the orderbook log
+        new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price, "Side": "Buy", "Status": "Open", "Update_Timestamp": timestamp, "Version": 1}
+        to_log = pd.Series(new_order)
+        orderbook_log = pd.concat([orderbook_log, to_log.to_frame().T], ignore_index=True)
+        return buy_orderbook, orderbook_log
+    
+    def sell_orderbook_append ( trader_id, timestamp, quantity, price, sell_orderbook, orderbook_log):
+        if len(orderbook_log) < 1:
+            order_id = 1
+        else:
+            order_id = orderbook_log.iloc[-1,0] + 1
+        # appending order to the live sell orderbook
+        timestamp = pd.to_datetime(timestamp)
+        new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price}
+        to_orderbook = pd.Series(new_order)
+        sell_orderbook = pd.concat([sell_orderbook, to_orderbook.to_frame().T], ignore_index=True)
         sell_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[True, True], inplace=True)
-        historic_sell_orderbook = h_orderbook_append(new_order, "sell", historic_sell_orderbook)
-        return sell_orderbook, historic_sell_orderbook
+        sell_orderbook["Timestamp"] = pd.to_datetime(sell_orderbook["Timestamp"])
+
+        # appending order to the orderbook log
+        new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price, "Side": "Sell", "Status": "Open", "Update_Timestamp": timestamp, "Version": 1}
+        to_log = pd.Series(new_order)
+        orderbook_log = pd.concat([orderbook_log, to_log.to_frame().T], ignore_index=True)
+
     def bot_debiting(bot, input_orders):
         for index, order in input_orders.iterrows():
             qty = int(order["Quantity"])
@@ -378,7 +389,7 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, historic_bu
         return bot
 
     # D.2, D.3, D.4
-    df_input_orders = pd.DataFrame(columns=["Timestamp", "Trader_ID", "Quantity", "Price", "Flag"])
+    df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = bot["Wealth"] / key_figs.market_price
@@ -390,8 +401,8 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, historic_bu
         for order_qty in order_quantities:
             order_price = round(key_figs.best_ask - p_level_counter,2)
             order_quantity = round(order_qty * max_buy_quantity)
-            buy_orderbook, historic_buy_orderbook = buy_orderbook_append(timestamp, trader_id, order_quantity, order_price, buy_orderbook, historic_buy_orderbook)
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+            buy_orderbook, orderbook_log = buy_orderbook_append(trader_id, timestamp, order_quantity, order_price, buy_orderbook, orderbook_log)
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
 
@@ -400,8 +411,8 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, historic_bu
         for order_qty in order_quantities:
             order_price = round(key_figs.best_bid + p_level_counter,2)
             order_quantity = round(order_qty * max_sell_quantity)
-            sell_orderbook, historic_sell_orderbook = sell_orderbook_append(timestamp, trader_id, order_quantity, order_price, sell_orderbook, historic_sell_orderbook )
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+            sell_orderbook, orderbook_log = sell_orderbook_append(trader_id, timestamp, order_quantity, order_price, sell_orderbook, orderbook_log)
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
 
@@ -410,8 +421,8 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, historic_bu
         for order_qty in buy_order_quantities:
             order_price = round(key_figs.market_price - p_level_counter,2)
             order_quantity = round(order_qty * max_buy_quantity)
-            buy_orderbook, historic_buy_orderbook = buy_orderbook_append(timestamp, trader_id, order_quantity, order_price, buy_orderbook, historic_buy_orderbook)
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
+            buy_orderbook, orderbook_log = buy_orderbook_append(trader_id, timestamp, order_quantity, order_price, buy_orderbook, orderbook_log)
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
         
@@ -419,13 +430,13 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, historic_bu
         for order_qty in sell_order_quantities:
             order_price = round(key_figs.market_price + p_level_counter,2)
             order_quantity = round(order_qty * max_sell_quantity)
-            sell_orderbook, historic_sell_orderbook  = sell_orderbook_append(timestamp, trader_id, order_quantity, order_price, sell_orderbook, historic_sell_orderbook )
-            input_order = pd.Series({"Timestamp" : timestamp, "Trader_ID" : trader_id, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
+            sell_orderbook, orderbook_log  = sell_orderbook_append(trader_id, timestamp, order_quantity, order_price, sell_orderbook, orderbook_log)
+            input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
 
     bot = bot_debiting(bot, df_input_orders)
-    return bot, buy_orderbook, sell_orderbook, historic_buy_orderbook, historic_sell_orderbook
+    return bot, buy_orderbook, sell_orderbook, orderbook_log
 
 
 
