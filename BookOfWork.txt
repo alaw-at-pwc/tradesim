@@ -8,16 +8,11 @@ Things to add:
 - library list with current versions
 
 Things to fix:
-- need to ammend transaction log write up to include order ids
-    - 12/07 - need to also add in orders that are executed immediately to be written to the orderbook_log too, and generate and associate order_id
-    - 12/07 - transaction log now records ids. however, some orders are not being recorded as filled as accordingly, and NaN issue in orderbooks persists
-    - 17/07 - this has been resolved, only issue is after an aggressive execution with left over quantity, child orders are not updated to being closed - need to add differentiating for different fills
-    - 18/07 - primarily fixed - minor bug persists with quantity rewrites - standardise timestamp datatype to fix
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
     - 04/07 - made bots have their own ways to decide quantity and price level. however, much of this is still up to chance
-    - Should add a form of strategy, maybe encourage more executions to cause more variation in the price (wihtin reason)
+    - Should add a form of strategy, maybe encourage more executions to cause more variation in the price (wihtin reason) - should enoucrage more buy executions to happen, as price tends to trend downwards
 
 Completed items:
 - Look to fix botlogic.py so it can be used as a script to import in, for ease of navigation
@@ -68,3 +63,9 @@ Completed items:
     - 03/07 - made some changes but needs to be more rigorously tested
 - improve and change the logic for each unique decision tree to fit that profile
     - 04/07 - made some amendments so that trees are more unique, but can be improved further 
+- need to ammend transaction log write up to include order ids
+    - 12/07 - need to also add in orders that are executed immediately to be written to the orderbook_log too, and generate and associate order_id
+    - 12/07 - transaction log now records ids. however, some orders are not being recorded as filled as accordingly, and NaN issue in orderbooks persists
+    - 17/07 - this has been resolved, only issue is after an aggressive execution with left over quantity, child orders are not updated to being closed - need to add differentiating for different fills
+    - 18/07 - primarily fixed - minor bug persists with quantity rewrites - standardise timestamp datatype to fix
+    - 19/07 - fixed, sometimes produces negative quantity on sell side (look into, but otherwise working)
