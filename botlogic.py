@@ -1,6 +1,7 @@
 # This script takes various market info, and runs the bot through its designated decision tree. 
 import numpy as np
 import pandas as pd
+import datetime as dt
 
 def random_action_gen ():
         order_val = np.random.random()
@@ -189,6 +190,31 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
                 tree6 = "sell"
             else: 
                 tree6 = "neither"
+
+        # T.TransactionQty - Evaluate the number of transactions on each side of the orderbook in the last 30 seconds
+        transaction_buy_qty = 0
+        transaction_sell_qty = 0
+        for index, order in transaction_log.iterrows():
+            transaction_time_check = dt.datetime.now() - order["Timestamp"]
+            if transaction_time_check.seconds <= 30 and order["Aggressor"] == "Buy":
+                transaction_buy_qty += order["Quantity"]
+            elif transaction_time_check.seconds <= 30 and order["Aggressor"] == "Sell":
+                transaction_sell_qty += order["Quantity"]
+        try:
+            buy_to_sell_ratio = transaction_buy_qty / transaction_sell_qty
+
+            if buy_to_sell_ratio >= 4:
+                tree_transaction = "buy"
+            elif buy_to_sell_ratio < 4 and buy_to_sell_ratio >= 2:
+                tree_transaction = "sell"
+            elif buy_to_sell_ratio > 0.25 and buy_to_sell_ratio <= 0.5:
+                tree_transaction = "buy"
+            elif buy_to_sell_ratio <= 0.25:
+                tree_transaction = "sell"
+            else:
+                tree_transaction = "neither"
+        except: # for when transacted sells = 0
+            tree_transaction = "buy"
          
         # T.IB - Looking at what current orders the trader has in the market
         open_bb_orders, open_bb_qty, open_bnp_orders, open_bnp_qty = open_orders(bot.iloc[0], buy_orderbook, key_figs.best_bid)   
@@ -240,7 +266,7 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
             force_priortiy = False
 
         # B.3 - vote counting module. If counts are equal, generate random action
-        tree_list = [tree1, tree2, tree3, tree5, tree6]
+        tree_list = [tree1, tree2, tree3, tree5, tree6, tree_transaction]
         buy_vote = 0
         sell_vote = 0
         
@@ -365,7 +391,7 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
         result = "no_decision"
     return result, bot, state
 
-def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
+def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_log):
     # RP - Bernoulli risk probability test:
         # H0: bot will trade i.e. test fails, they will trade 
         # H1: bot will not trade i.e. test passes, they will be inactive
@@ -439,6 +465,25 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
             else: 
                 tree6 = "neither"
                 force_flag = "none"
+        # T.TransactionQty - Evaluate the number of transactions on each side of the orderbook in the last 30 seconds
+        transaction_buy_qty = 0
+        transaction_sell_qty = 0
+        for index, order in transaction_log.iterrows():
+            transaction_time_check = dt.datetime.now() - order["Timestamp"]
+            if transaction_time_check.seconds <= 30 and order["Aggressor"] == "Buy":
+                transaction_buy_qty += order["Quantity"]
+            elif transaction_time_check.seconds <= 30 and order["Aggressor"] == "Sell":
+                transaction_sell_qty += order["Quantity"]
+        try:       
+            buy_to_sell_ratio = transaction_buy_qty / transaction_sell_qty
+            if buy_to_sell_ratio >= 3:
+                tree_transaction = "sell"
+            elif buy_to_sell_ratio <= 0.33:
+                tree_transaction = "buy"
+            else:
+                tree_transaction = "neither"
+        except: # for when the transacted sell quantity is 0
+            tree_transaction = "sell"
     else:    
         result = "no_decision"
         force_flag = "na"
@@ -458,7 +503,7 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
         result = bot_action + "_" + order_flag
         liquidity_flag = True
     elif force_flag == "none":
-        tree_list = [tree2, tree3, tree6]
+        tree_list = [tree2, tree3, tree6, tree_transaction]
         buy_vote = 0
         sell_vote = 0
         liquidity_flag = False

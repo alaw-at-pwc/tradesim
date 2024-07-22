@@ -1,9 +1,7 @@
 Things to add:
 - bots considering what open orders they have, how this might impact their orders/type of orders, and whether to cancel orders
     - 09/07 - IB traders will consider what open orders they have and will factor this into their decision making. however, no order cancellations are in the logic, aside from the default order cancellations
-- some bots should consider trading volumes to inform decisions too 
 
-- ability in setup to choose between a candlestick and a price line graph (mpf.plot(daily, type='line'))
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 - liquidity selection 
 - library list with current versions
@@ -73,3 +71,7 @@ Completed items:
     - 19/07 - fixed, sometimes produces negative quantity on sell side (look into, but otherwise working)
 - for RI and PI traders, split out into different categories so you have risky and less risky participants, which rely on different trees more than others
     - 22/07 - added this in, with slight modifications to how decisons are made, and the quantitity that is used for orders
+- add recent trasactions to be displayed on front end 
+    - 22/07 - added in
+- some bots should consider trading volumes to inform decisions too 
+    - 22/07 - added in for IB and MM traders
