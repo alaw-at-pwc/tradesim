@@ -1,10 +1,8 @@
 Things to add:
-- bots considering what open orders they have, how this might impact their orders/type of orders, and whether to cancel orders
-    - 09/07 - IB traders will consider what open orders they have and will factor this into their decision making. however, no order cancellations are in the logic, aside from the default order cancellations
-
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 - liquidity selection 
 - library list with current versions
+- market data period selection
 
 Things to fix:
 - some bots wealth not being to 2 d.p.
@@ -75,3 +73,5 @@ Completed items:
     - 22/07 - added in
 - some bots should consider trading volumes to inform decisions too 
     - 22/07 - added in for IB and MM traders
+- bots considering what open orders they have, how this might impact their orders/type of orders, and whether to cancel orders
+    - 09/07 - IB traders will consider what open orders they have and will factor this into their decision making. however, no order cancellations are in the logic, aside from the default order cancellations
