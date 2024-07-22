@@ -18,7 +18,7 @@ def IB_order (result, bot, key_figs, force_priority):
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
-    max_buy_quantity = bot["Wealth"] / key_figs.market_price
+    max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
     max_sell_quantity = bot["Asset"]
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
 
@@ -57,7 +57,7 @@ def IB_order (result, bot, key_figs, force_priority):
 
     elif result == 'sell_order' and force_priority == True:
         order_price = round(key_figs.best_ask, 2)
-        order_quantity = round(random.uniform(0.10, 0.25) * max_sell_quantity)
+        order_quantity = round(random.uniform(0.10, 0.15) * max_sell_quantity)
         input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
@@ -79,19 +79,19 @@ def IB_order (result, bot, key_figs, force_priority):
     elif result == 'sell_execute':
         #D.5.2
         order_price = key_figs.best_bid
-        order_quantity = round(random.uniform(0.15, 0.25) * max_sell_quantity)
+        order_quantity = round(random.uniform(0.15, 0.20) * max_sell_quantity)
         input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
 
         scd_order_price = round(key_figs.best_ask,2)
-        scd_order_quantity = round(random.uniform(0.10, 0.25) * max_buy_quantity)
+        scd_order_quantity = round(random.uniform(0.10, 0.15) * max_buy_quantity)
         scd_input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : scd_order_quantity, "Price" : scd_order_price, "Flag" : "ask"})
         df_input_orders = pd.concat([df_input_orders, scd_input_order.to_frame().T], ignore_index=True)
 
     elif result == 'multiple_orders':
         num_buy_orders = np.random.randint(0,3)
         if num_buy_orders > 0: 
-            order_quantities = liquidity_levels_calc(num_buy_orders, 0.05, 0.15)
+            order_quantities = liquidity_levels_calc(num_buy_orders, 0.05, 0.10)
             p_level_counter = 0.01
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_bid - p_level_counter,2)
@@ -101,7 +101,7 @@ def IB_order (result, bot, key_figs, force_priority):
                 p_level_counter += 0.01
         num_sell_orders = np.random.randint(0,3)
         if num_sell_orders > 0:
-            order_quantities = liquidity_levels_calc(num_sell_orders, 0.05, 0.15)
+            order_quantities = liquidity_levels_calc(num_sell_orders, 0.05, 0.10)
             p_level_counter = 0
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_ask + p_level_counter,2)
@@ -117,7 +117,7 @@ def WM_order (result, bot, key_figs):
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
-    max_buy_quantity = bot["Wealth"] / key_figs.market_price
+    max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
     max_sell_quantity = bot["Asset"]
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
 
@@ -167,7 +167,7 @@ def MM_order (result, bot, key_figs, liquidity_flag):
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
-    max_buy_quantity = bot["Wealth"] / key_figs.market_price
+    max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
     max_sell_quantity = bot["Asset"] 
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
     
@@ -214,7 +214,7 @@ def MM_order (result, bot, key_figs, liquidity_flag):
 
         elif result == 'sell_order' and bid_ask_spread <= 0.2:
             order_price = round(key_figs.best_ask, 2)
-            order_quantity = round(random.uniform(0.05, 0.20) * max_sell_quantity)
+            order_quantity = round(random.uniform(0.05, 0.15) * max_sell_quantity)
             input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
 
         elif result == 'sell_execute':
@@ -227,12 +227,22 @@ def MM_order (result, bot, key_figs, liquidity_flag):
     return bot, df_input_orders
 
 def RI_order (result, bot, key_figs, emotion_bias):
+    # Determine if participant is high or low risk to set a quantity scalar 
+    if bot["Profile"] == "HR Retail Investor":
+        qty_scalar = 1
+    elif bot["Profile"] == "LR Retail Investor":
+        qty_scalar = 0.75
+
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = (bot["Wealth"] * bot["Risk"]) / key_figs.market_price
+    max_buy_quantity *= qty_scalar
+    max_buy_quantity = round(max_buy_quantity, 2)
     max_sell_quantity = bot["Asset"] * bot["Risk"]
+    max_sell_quantity *= qty_scalar 
+    max_sell_quantity = round(max_sell_quantity,2)
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
 
     if result == 'buy_order' and bid_ask_spread > 0.02:
@@ -289,12 +299,22 @@ def RI_order (result, bot, key_figs, emotion_bias):
     return bot, df_input_orders
 
 def PI_order (result, bot, key_figs):
+    # Determine if participant is high or low risk
+    if bot["Profile"] == "HR Private Investor":
+        qty_scalar = 0.9
+    elif bot["Profile"] == "LR Private Investor":
+        qty_scalar = 0.6
+
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = (bot["Wealth"] * bot["Risk"]) / key_figs.market_price
+    max_buy_quantity *= qty_scalar
+    max_buy_quantity = round(max_buy_quantity, 2)
     max_sell_quantity = bot["Asset"] * bot["Risk"]
+    max_sell_quantity *= qty_scalar
+    max_sell_quantity = round(max_sell_quantity, 2)
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
 
     if result == 'buy_order' and bid_ask_spread > 0.02:
@@ -382,7 +402,7 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
             qty = int(order["Quantity"])
             price = round(order["Price"],2)
             if order["Flag"] == "bid":
-                order_value = price * qty
+                order_value = round(price * qty, 2)
                 bot.iloc[2] -= order_value # wealth
             elif order["Flag"] == "ask":    
                 bot.iloc[1] -= qty # assets
@@ -392,7 +412,7 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
-    max_buy_quantity = bot["Wealth"] / key_figs.market_price
+    max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
     max_sell_quantity = bot["Asset"]
     p_level_counter = 0.03
 
