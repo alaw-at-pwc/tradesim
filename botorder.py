@@ -2,7 +2,6 @@
 import random
 import numpy as np
 import pandas as pd
-import datetime as dt
 
 # deciding order qty levels across multiple price levels
 def liquidity_levels_calc(levels, prop_min, prop_max):
@@ -13,10 +12,9 @@ def liquidity_levels_calc(levels, prop_min, prop_max):
     order_quantities = -np.sort(-bounded_exponential_randoms) #sorts numbers from highest to lowest
     return order_quantities
 
-def IB_order (result, bot, key_figs, force_priority):
+def IB_order (result, bot, key_figs, force_priority, timestamp):
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
-    timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
     max_sell_quantity = bot["Asset"]
@@ -112,10 +110,9 @@ def IB_order (result, bot, key_figs, force_priority):
 
     return bot, df_input_orders
 
-def WM_order (result, bot, key_figs):
+def WM_order (result, bot, key_figs, timestamp):
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
-    timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
     max_sell_quantity = bot["Asset"]
@@ -162,10 +159,9 @@ def WM_order (result, bot, key_figs):
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
 
-def MM_order (result, bot, key_figs, liquidity_flag):
+def MM_order (result, bot, key_figs, liquidity_flag, timestamp):
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
-    timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
     max_sell_quantity = bot["Asset"] 
@@ -226,7 +222,7 @@ def MM_order (result, bot, key_figs, liquidity_flag):
 
     return bot, df_input_orders
 
-def RI_order (result, bot, key_figs, emotion_bias):
+def RI_order (result, bot, key_figs, emotion_bias, timestamp):
     # Determine if participant is high or low risk to set a quantity scalar 
     if bot["Profile"] == "HR Retail Investor":
         qty_scalar = 1
@@ -235,7 +231,6 @@ def RI_order (result, bot, key_figs, emotion_bias):
 
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
-    timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = (bot["Wealth"] * bot["Risk"]) / key_figs.market_price
     max_buy_quantity *= qty_scalar
@@ -298,7 +293,7 @@ def RI_order (result, bot, key_figs, emotion_bias):
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
     return bot, df_input_orders
 
-def PI_order (result, bot, key_figs):
+def PI_order (result, bot, key_figs, timestamp):
     # Determine if participant is high or low risk
     if bot["Profile"] == "HR Private Investor":
         qty_scalar = 0.9
@@ -307,7 +302,6 @@ def PI_order (result, bot, key_figs):
 
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
-    timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = (bot["Wealth"] * bot["Risk"]) / key_figs.market_price
     max_buy_quantity *= qty_scalar
@@ -359,58 +353,9 @@ def PI_order (result, bot, key_figs):
     return bot, df_input_orders
 
 # help create liquidity in orderbooks 
-def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_log):
-    def buy_orderbook_append ( trader_id, timestamp, quantity, price, buy_orderbook, orderbook_log): 
-        if len(orderbook_log) < 1:
-            order_id = 1
-        else:
-            order_id = orderbook_log.iloc[-1,0] + 1
-        # appending order to the live buy orderbook
-        timestamp = pd.to_datetime(timestamp)
-        new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price}
-        to_orderbook = pd.Series(new_order)
-        buy_orderbook = pd.concat([buy_orderbook, to_orderbook.to_frame().T], ignore_index=True)
-        buy_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[False, True], inplace=True)
-        buy_orderbook["Timestamp"] = pd.to_datetime(buy_orderbook["Timestamp"])
-
-        # appending order to the orderbook log
-        new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price, "Side": "Buy", "Status": "Open", "Update_Timestamp": timestamp, "Version": 1}
-        to_log = pd.Series(new_order)
-        orderbook_log = pd.concat([orderbook_log, to_log.to_frame().T], ignore_index=True)
-        return buy_orderbook, orderbook_log
-    
-    def sell_orderbook_append ( trader_id, timestamp, quantity, price, sell_orderbook, orderbook_log):
-        if len(orderbook_log) < 1:
-            order_id = 1
-        else:
-            order_id = orderbook_log.iloc[-1,0] + 1
-        # appending order to the live sell orderbook
-        timestamp = pd.to_datetime(timestamp)
-        new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price}
-        to_orderbook = pd.Series(new_order)
-        sell_orderbook = pd.concat([sell_orderbook, to_orderbook.to_frame().T], ignore_index=True)
-        sell_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[True, True], inplace=True)
-        sell_orderbook["Timestamp"] = pd.to_datetime(sell_orderbook["Timestamp"])
-
-        # appending order to the orderbook log
-        new_order = {"Order_ID": order_id, "Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : quantity, "Price" : price, "Side": "Sell", "Status": "Open", "Update_Timestamp": timestamp, "Version": 1}
-        to_log = pd.Series(new_order)
-        orderbook_log = pd.concat([orderbook_log, to_log.to_frame().T], ignore_index=True)
-
-    def bot_debiting(bot, input_orders):
-        for index, order in input_orders.iterrows():
-            qty = int(order["Quantity"])
-            price = round(order["Price"],2)
-            if order["Flag"] == "bid":
-                order_value = round(price * qty, 2)
-                bot.iloc[2] -= order_value # wealth
-            elif order["Flag"] == "ask":    
-                bot.iloc[1] -= qty # assets
-        return bot
-
+def liquidity_creator (bot, key_figs, timestamp):
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
-    timestamp = dt.datetime.now()
     trader_id = bot["Trader_ID"]
     max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
     max_sell_quantity = bot["Asset"]
@@ -421,7 +366,6 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
         for order_qty in order_quantities:
             order_price = round(key_figs.best_ask - p_level_counter,2)
             order_quantity = round(order_qty * max_buy_quantity)
-            buy_orderbook, orderbook_log = buy_orderbook_append(trader_id, timestamp, order_quantity, order_price, buy_orderbook, orderbook_log)
             input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
@@ -431,7 +375,6 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
         for order_qty in order_quantities:
             order_price = round(key_figs.best_bid + p_level_counter,2)
             order_quantity = round(order_qty * max_sell_quantity)
-            sell_orderbook, orderbook_log = sell_orderbook_append(trader_id, timestamp, order_quantity, order_price, sell_orderbook, orderbook_log)
             input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
@@ -441,7 +384,6 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
         for order_qty in buy_order_quantities:
             order_price = round(key_figs.market_price - p_level_counter,2)
             order_quantity = round(order_qty * max_buy_quantity)
-            buy_orderbook, orderbook_log = buy_orderbook_append(trader_id, timestamp, order_quantity, order_price, buy_orderbook, orderbook_log)
             input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
@@ -450,13 +392,11 @@ def liquidity_creator (bot, key_figs, buy_orderbook, sell_orderbook, orderbook_l
         for order_qty in sell_order_quantities:
             order_price = round(key_figs.market_price + p_level_counter,2)
             order_quantity = round(order_qty * max_sell_quantity)
-            sell_orderbook, orderbook_log  = sell_orderbook_append(trader_id, timestamp, order_quantity, order_price, sell_orderbook, orderbook_log)
             input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
 
-    bot = bot_debiting(bot, df_input_orders)
-    return bot, buy_orderbook, sell_orderbook, orderbook_log
+    return bot, df_input_orders
 
 
 

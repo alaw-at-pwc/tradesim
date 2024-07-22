@@ -1,7 +1,9 @@
 Things to add:
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
+- introduce dynamic risk, based on current positions??
 - liquidity selection 
 - market data period selection
+    - 22/07 - added in but needs to be teseted for longer run sims, and for cases where the time does not fit so nicely. 
 
 Things to fix:
 - some bots wealth not being to 2 d.p.
