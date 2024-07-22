@@ -6,8 +6,8 @@ import numpy as np
 def participant_creation (participant_num):
     participant_num += 1
     i = 1
-    profiles = ["IB Trader", "WM Trader", "Market Maker", "Retail Investor", "Private Investor"]
-    profile_proportions = [0.50, 0.05, 0.02, 0.33, 0.10]
+    profiles = ["IB Trader", "WM Trader", "Market Maker", "HR Retail Investor", "LR Retail Investor", "HR Private Investor", "LR Private Investor"]
+    profile_proportions = [0.50, 0.08, 0.02, 0.15, 0.15, 0.05, 0.05]
 
     # Check to see that the proportions add up to 1
     if not np.isclose(sum(profile_proportions), 1.0):
@@ -74,16 +74,28 @@ def participant_creation (participant_num):
         risk = np.random.uniform(0.01, 0.10)
         activity = np.random.uniform(0.70, 0.90)
         return asset, wealth, risk, activity 
-    def generate_ri():
+    def generate_hrri():
         asset = np.random.randint(1,200)
         wealth = np.random.randint(500,4000)
-        risk = np.random.uniform(0.50, 1.0)
+        risk = np.random.uniform(0.70, 1.0)
         activity = np.random.uniform(0.30, 0.80)
         return asset, wealth, risk, activity 
-    def generate_pi():
+    def generate_lrri():
+        asset = np.random.randint(1,200)
+        wealth = np.random.randint(500,4000)
+        risk = np.random.uniform(0.50, 0.80)
+        activity = np.random.uniform(0.30, 0.80)
+        return asset, wealth, risk, activity 
+    def generate_hrpi():
         asset = np.random.randint(50,400)
         wealth = np.random.randint(1000,5000)
-        risk = np.random.uniform(0.30, 0.70)
+        risk = np.random.uniform(0.40, 0.80)
+        activity = np.random.uniform(0.20, 0.50)
+        return asset, wealth, risk, activity 
+    def generate_lrpi():
+        asset = np.random.randint(50,400)
+        wealth = np.random.randint(1000,5000)
+        risk = np.random.uniform(0.20, 0.50)
         activity = np.random.uniform(0.20, 0.50)
         return asset, wealth, risk, activity 
     
@@ -92,8 +104,10 @@ def participant_creation (participant_num):
         {'condition': df_participants['Profile'] == "IB Trader", 'generate_values': lambda: generate_ib()},
         {'condition': df_participants['Profile'] == "WM Trader", 'generate_values': lambda: generate_wm()},
         {'condition': df_participants['Profile'] == "Market Maker",'generate_values': lambda: generate_mm()},
-        {'condition': df_participants['Profile'] == "Retail Investor",'generate_values': lambda: generate_ri()},
-        {'condition': df_participants['Profile'] == "Private Investor",'generate_values': lambda: generate_pi()},
+        {'condition': df_participants['Profile'] == "HR Retail Investor",'generate_values': lambda: generate_hrri()},
+        {'condition': df_participants['Profile'] == "LR Retail Investor",'generate_values': lambda: generate_lrri()},
+        {'condition': df_participants['Profile'] == "HR Private Investor",'generate_values': lambda: generate_hrpi()},
+        {'condition': df_participants['Profile'] == "LR Private Investor",'generate_values': lambda: generate_lrpi()}
     ]
     # adding the traits for each profile type
     for update in updates:
@@ -126,7 +140,7 @@ def user_creation (df_participants, participant_int):
 def iteration_start(df_participants):
     df_available = pd.DataFrame()
 
-    bot_profiles = ["IB Trader", "WM Trader", "Market Maker", "Retail Investor", "Private Investor"]
+    bot_profiles = ["IB Trader", "WM Trader", "Market Maker", "HR Retail Investor", "LR Retail Investor", "HR Private Investor", "LR Private Investor"]
     # Could be slow - look to optimise using vectorization/ Numpy function?
     for index, row in df_participants.iterrows():
         if  row["Profile"] in bot_profiles and row["Delay"] == 0:

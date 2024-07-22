@@ -1,6 +1,7 @@
 # This script takes various market info, and runs the bot through its designated decision tree. 
 import numpy as np
 import pandas as pd
+import datetime as dt
 
 def random_action_gen ():
         order_val = np.random.random()
@@ -189,6 +190,31 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
                 tree6 = "sell"
             else: 
                 tree6 = "neither"
+
+        # T.TransactionQty - Evaluate the number of transactions on each side of the orderbook in the last 30 seconds
+        transaction_buy_qty = 0
+        transaction_sell_qty = 0
+        for index, order in transaction_log.iterrows():
+            transaction_time_check = dt.datetime.now() - order["Timestamp"]
+            if transaction_time_check.seconds <= 30 and order["Aggressor"] == "Buy":
+                transaction_buy_qty += order["Quantity"]
+            elif transaction_time_check.seconds <= 30 and order["Aggressor"] == "Sell":
+                transaction_sell_qty += order["Quantity"]
+        try:
+            buy_to_sell_ratio = transaction_buy_qty / transaction_sell_qty
+
+            if buy_to_sell_ratio >= 4:
+                tree_transaction = "buy"
+            elif buy_to_sell_ratio < 4 and buy_to_sell_ratio >= 2:
+                tree_transaction = "sell"
+            elif buy_to_sell_ratio > 0.25 and buy_to_sell_ratio <= 0.5:
+                tree_transaction = "buy"
+            elif buy_to_sell_ratio <= 0.25:
+                tree_transaction = "sell"
+            else:
+                tree_transaction = "neither"
+        except: # for when transacted sells = 0
+            tree_transaction = "buy"
          
         # T.IB - Looking at what current orders the trader has in the market
         open_bb_orders, open_bb_qty, open_bnp_orders, open_bnp_qty = open_orders(bot.iloc[0], buy_orderbook, key_figs.best_bid)   
@@ -240,7 +266,7 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
             force_priortiy = False
 
         # B.3 - vote counting module. If counts are equal, generate random action
-        tree_list = [tree1, tree2, tree3, tree5, tree6]
+        tree_list = [tree1, tree2, tree3, tree5, tree6, tree_transaction]
         buy_vote = 0
         sell_vote = 0
         
@@ -365,7 +391,7 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
         result = "no_decision"
     return result, bot, state
 
-def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
+def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_log):
     # RP - Bernoulli risk probability test:
         # H0: bot will trade i.e. test fails, they will trade 
         # H1: bot will not trade i.e. test passes, they will be inactive
@@ -439,6 +465,25 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
             else: 
                 tree6 = "neither"
                 force_flag = "none"
+        # T.TransactionQty - Evaluate the number of transactions on each side of the orderbook in the last 30 seconds
+        transaction_buy_qty = 0
+        transaction_sell_qty = 0
+        for index, order in transaction_log.iterrows():
+            transaction_time_check = dt.datetime.now() - order["Timestamp"]
+            if transaction_time_check.seconds <= 30 and order["Aggressor"] == "Buy":
+                transaction_buy_qty += order["Quantity"]
+            elif transaction_time_check.seconds <= 30 and order["Aggressor"] == "Sell":
+                transaction_sell_qty += order["Quantity"]
+        try:       
+            buy_to_sell_ratio = transaction_buy_qty / transaction_sell_qty
+            if buy_to_sell_ratio >= 3:
+                tree_transaction = "sell"
+            elif buy_to_sell_ratio <= 0.33:
+                tree_transaction = "buy"
+            else:
+                tree_transaction = "neither"
+        except: # for when the transacted sell quantity is 0
+            tree_transaction = "sell"
     else:    
         result = "no_decision"
         force_flag = "na"
@@ -458,7 +503,7 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
         result = bot_action + "_" + order_flag
         liquidity_flag = True
     elif force_flag == "none":
-        tree_list = [tree2, tree3, tree6]
+        tree_list = [tree2, tree3, tree6, tree_transaction]
         buy_vote = 0
         sell_vote = 0
         liquidity_flag = False
@@ -490,79 +535,11 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook):
 
 def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
     emotion_bias = "none"
-    # RP - Bernoulli risk probability test:
-        # H0: bot will trade i.e. test fails, they will trade 
-        # H1: bot will not trade i.e. test passes, they will be inactive
-        # setup to encourage more participation in the market 
-    test_val = np.random.random()
-    if test_val < bot["Risk"]:  
-        state = "inactive"
-    else: 
-        state = "active"
-        
-    if state == "active":
-        # T.1 - market movement tree
-        # T.1.2: function to calculate the price movement in the last 25 transactions
-        if len(transaction_log) > 24:
-            prev_price = transaction_log.iat[-25,4]
-        else:
-            prev_price = transaction_log.iat[-1,4]
-        market_delta = prev_price - key_figs.market_price
-        if market_delta >= 0.02:
-            tree1 = 'sell'
-        elif market_delta <= -0.02:
-            tree1 = 'buy'
-        else:
-            tree1 = 'neither'
-
-        # T.2 - Calculating the asset value/ capital ratio
-        asset_value = key_figs.market_price * bot["Asset"]
-        avc_ratio = asset_value / bot["Wealth"]
-        avc_benchmark = avc_ratio * bot["Risk"]
-
-        # Calculating if the bot has made a profit or loss 
-        start_capital = (key_figs.open_price * bot["PreAsset"]) + bot["PreWealth"]
-        current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
-
-        # Asset-capital ratio tree and PnL - for when it is possible to call from market    
-        if current_capital >= start_capital and avc_benchmark >= 0.15:
-            tree2 = 'sell'
-            emotion_bias = "positive"
-        elif current_capital >= start_capital and avc_benchmark < 0.15:
-            tree2 = 'd_buy'
-            #tree2 = 'buy'
-            emotion_bias = "positive"
-        elif current_capital < start_capital and avc_benchmark >= 0.15:
-            tree2 = 'd_sell'
-            #tree2 = 'sell'
-            emotion_bias = "negative"
-        elif current_capital < start_capital and avc_benchmark < 0.15:
-            tree2 = 'buy'
-            emotion_bias = "negative"
-
-        # T.4 - wildcard tree
-        if bot["Risk"] >= 0.82: # this restricts this tree to the 10th percentile of risk-takers
-            tree4 = random_action_gen()
-        else:
-            tree4 = 'neither'
-
-        # T.5 - market sentiment tree
-        if RI_market_state == "h_bull":
-            tree5 = "d_buy"
-        elif RI_market_state == "bull":
-            tree5 = "buy"
-        elif RI_market_state == "bear":
-            tree5 = "sell"
-        elif RI_market_state == "h_bear":
-            tree5 = "d_sell"
-        elif RI_market_state == "neutral" or RI_market_state == None:
-            tree5 = "neither" 
-        
-        # B.3 - vote counting module. If counts are equal, generate random action
-        tree_list = [tree1, tree2, tree4, tree5]
+    # B.3 - vote counting module. If counts are equal, generate random action
+    def vote_counter(tree_list):
         buy_vote = 0
         sell_vote = 0
-         
+            
         for choice in tree_list:
             if choice == 'buy':
                 buy_vote += 1
@@ -595,13 +572,8 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             bot_action = 'sell'
             order_flag = RI_order_type_calc(sell_vote, emotion_bias)
             result = bot_action + "_" + order_flag
-    elif state == "inactive":
-        result = "no_decision"
-        emotion_bias = "none"
+        return result
 
-    return result, bot, state, emotion_bias
-
-def PI_bot_decision (bot, PI_market_state, key_figs):
     # RP - Bernoulli risk probability test:
         # H0: bot will trade i.e. test fails, they will trade 
         # H1: bot will not trade i.e. test passes, they will be inactive
@@ -611,8 +583,28 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
         state = "inactive"
     else: 
         state = "active"
-        
-    if state == "active":
+    
+    # determine if the bot is a high risk or low risk participant
+    if bot["Profile"] == "HR Retail Investor":
+        high_risk = True 
+    elif bot["Profile"] == "LR Retail Investor":
+        high_risk = False
+
+    if state == "active" and high_risk == False: # regular RI tree
+        # T.1 - market movement tree
+        # T.1.2: function to calculate the price movement in the last 25 transactions
+        if len(transaction_log) > 24:
+            prev_price = transaction_log.iat[-25,4]
+        else:
+            prev_price = transaction_log.iat[-1,4]
+        market_delta = prev_price - key_figs.market_price
+        if market_delta >= 0.02:
+            tree1 = 'sell'
+        elif market_delta <= -0.02:
+            tree1 = 'buy'
+        else:
+            tree1 = 'neither'
+
         # T.2 - Calculating the asset value/ capital ratio
         asset_value = key_figs.market_price * bot["Asset"]
         avc_ratio = asset_value / bot["Wealth"]
@@ -625,43 +617,116 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
         # Asset-capital ratio tree and PnL - for when it is possible to call from market    
         if current_capital >= start_capital and avc_benchmark >= 0.15:
             tree2 = 'sell'
+            emotion_bias = "positive"
         elif current_capital >= start_capital and avc_benchmark < 0.15:
-            #tree2 = 'd_buy'
             tree2 = 'buy'
+            emotion_bias = "positive"
         elif current_capital < start_capital and avc_benchmark >= 0.15:
-            #tree2 = 'd_sell'
             tree2 = 'sell'
+            emotion_bias = "negative"
         elif current_capital < start_capital and avc_benchmark < 0.15:
             tree2 = 'buy'
+            emotion_bias = "negative"
 
-        # T.3
-        if key_figs.abs_price_mvmt > 0:
-            tree3 = top_price_calc(key_figs)
-        elif key_figs.abs_price_mvmt < 0:
-            tree3 = bot_price_calc(key_figs)    
+        # T.4 - wildcard tree
+        if bot["Risk"] >= 0.76: # this restricts this tree to the tail-end of low-risk retail investors
+            tree4 = random_action_gen()
         else:
-            tree3 = "neither"
+            tree4 = 'neither'
 
-        # T.5 - market sentiment
-        if PI_market_state == "bull":
+        # T.5 - market sentiment tree
+        if RI_market_state == "h_bull":
+            tree5 = "d_buy"
+        elif RI_market_state == "bull":
             tree5 = "buy"
-        elif PI_market_state == "bear":
+        elif RI_market_state == "bear":
             tree5 = "sell"
-        elif PI_market_state == "neutral" or PI_market_state == None:
+        elif RI_market_state == "h_bear":
+            tree5 = "d_sell"
+        elif RI_market_state == "neutral" or RI_market_state == None:
             tree5 = "neither" 
-        else:
-            tree5 = "neither"
+        tree_list = [tree1, tree2, tree4, tree5]
+        result = vote_counter(tree_list)
 
+    elif state == "active" and high_risk == True: # Same decision tree, but with increased risk
+        # T.1 - market movement tree
+        # T.1.2: function to calculate the price movement in the last 25 transactions
+        if len(transaction_log) > 24:
+            prev_price = transaction_log.iat[-25,4]
+        else:
+            prev_price = transaction_log.iat[-1,4]
+        market_delta = prev_price - key_figs.market_price
+        if market_delta >= 0.02:
+            tree1 = 'sell'
+        elif market_delta <= -0.02:
+            tree1 = 'buy'
+        else:
+            tree1 = 'neither'
+
+        # T.2 - Calculating the asset value/ capital ratio
+        asset_value = key_figs.market_price * bot["Asset"]
+        avc_ratio = asset_value / bot["Wealth"]
+        avc_benchmark = avc_ratio * bot["Risk"]
+
+        # Calculating if the bot has made a profit or loss 
+        start_capital = (key_figs.open_price * bot["PreAsset"]) + bot["PreWealth"]
+        current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
+
+        # Asset-capital ratio tree and PnL - for when it is possible to call from market    
+        if current_capital >= start_capital and avc_benchmark >= 0.15:
+            tree2 = 'sell'
+            emotion_bias = "positive"
+        elif current_capital >= start_capital and avc_benchmark < 0.15:
+            tree2 = 'd_buy'
+            emotion_bias = "positive"
+        elif current_capital < start_capital and avc_benchmark >= 0.15:
+            tree2 = 'd_sell'
+            emotion_bias = "negative"
+        elif current_capital < start_capital and avc_benchmark < 0.15:
+            tree2 = 'buy'
+            emotion_bias = "negative"
+
+        # T.4 - wildcard tree
+        if bot["Risk"] >= 0.85: # this restricts this tree to the 50th percentile of high-risk retail investors 
+            tree4 = random_action_gen()
+        else:
+            tree4 = 'neither'
+
+        # T.5 - market sentiment tree
+        if RI_market_state == "h_bull":
+            tree5 = "d_buy"
+        elif RI_market_state == "bull":
+            tree5 = "buy"
+        elif RI_market_state == "bear":
+            tree5 = "sell"
+        elif RI_market_state == "h_bear":
+            tree5 = "d_sell"
+        elif RI_market_state == "neutral" or RI_market_state == None:
+            tree5 = "neither" 
+        tree_list = [tree1, tree2, tree4, tree5]
+        result = vote_counter(tree_list)
+
+    elif state == "inactive":
+        result = "no_decision"
+        emotion_bias = "none"
+
+    return result, bot, state, emotion_bias
+
+def PI_bot_decision (bot, PI_market_state, key_figs):
+    def vote_counter(tree_list):
         # B.3 - vote counting module. If counts are equal, generate random action
-        tree_list = [tree2, tree3, tree5]
         buy_vote = 0
         sell_vote = 0
         
         for choice in tree_list:
             if choice == 'buy':
                 buy_vote += 1
+            elif choice == "d_buy":
+                buy_vote += 2
             elif choice == 'sell':
                 sell_vote += 1
+            elif choice == "d_sell":
+                sell_vote += 2
 
         # D.1 deciding on type of order, based on number of vote counts
         if buy_vote == sell_vote:
@@ -676,6 +741,107 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
             bot_action = 'sell'
             order_flag = order_type_calc(sell_vote)
             result = bot_action + "_" + order_flag
+        return result
+
+    # determine if the bot is a high risk or low risk participant
+    if bot["Profile"] == "HR Private Investor":
+        high_risk = True 
+    elif bot["Profile"] == "LR Private Investor":
+        high_risk = False
+
+    # RP - Bernoulli risk probability test:
+        # H0: bot will trade i.e. test fails, they will trade 
+        # H1: bot will not trade i.e. test passes, they will be inactive
+        # setup to encourage more participation in the market 
+    test_val = np.random.random()
+    if test_val < bot["Risk"]:  
+        state = "inactive"
+    else: 
+        state = "active"
+        
+    if state == "active" and high_risk == False: # regular tree for low risk private investors 
+        # T.2 - Calculating the asset value/ capital ratio
+        asset_value = key_figs.market_price * bot["Asset"]
+        avc_ratio = asset_value / bot["Wealth"]
+        avc_benchmark = avc_ratio * bot["Risk"]
+
+        # Calculating if the bot has made a profit or loss 
+        start_capital = (key_figs.open_price * bot["PreAsset"]) + bot["PreWealth"]
+        current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
+
+        # Asset-capital ratio tree and PnL - for when it is possible to call from market    
+        if current_capital >= start_capital and avc_benchmark >= 0.15:
+            tree2 = 'sell'
+        elif current_capital >= start_capital and avc_benchmark < 0.15:
+            tree2 = 'buy'
+        elif current_capital < start_capital and avc_benchmark >= 0.15:
+            tree2 = 'sell'
+        elif current_capital < start_capital and avc_benchmark < 0.15:
+            tree2 = 'buy'
+
+        # T.3
+        if key_figs.abs_price_mvmt > 0:
+            tree3 = top_price_calc(key_figs)
+        elif key_figs.abs_price_mvmt < 0:
+            tree3 = bot_price_calc(key_figs)    
+        else:
+            tree3 = "neither"
+
+        # T.5 - market sentiment
+        if PI_market_state == "bull" or PI_market_state == "h_bull":
+            tree5 = "buy"
+        elif PI_market_state == "bear" or PI_market_state == "h_bear":
+            tree5 = "sell"
+        elif PI_market_state == "neutral" or PI_market_state == None:
+            tree5 = "neither" 
+        else:
+            tree5 = "neither"
+        tree_list = [tree2, tree3, tree5]
+        result = vote_counter(tree_list)
+    elif state == "active" and high_risk == True: # regular tree for low risk private investors 
+        # T.2 - Calculating the asset value/ capital ratio
+        asset_value = key_figs.market_price * bot["Asset"]
+        avc_ratio = asset_value / bot["Wealth"]
+        avc_benchmark = avc_ratio * bot["Risk"]
+
+        # Calculating if the bot has made a profit or loss 
+        start_capital = (key_figs.open_price * bot["PreAsset"]) + bot["PreWealth"]
+        current_capital = (key_figs.market_price * bot["Asset"]) + bot["Wealth"]
+
+        # Asset-capital ratio tree and PnL - for when it is possible to call from market    
+        if current_capital >= start_capital and avc_benchmark >= 0.15:
+            tree2 = 'sell'
+        elif current_capital >= start_capital and avc_benchmark < 0.15:
+            tree2 = 'd_buy'
+        elif current_capital < start_capital and avc_benchmark >= 0.15:
+            tree2 = 'd_sell'
+        elif current_capital < start_capital and avc_benchmark < 0.15:
+            tree2 = 'buy'
+
+        # T.3
+        if key_figs.abs_price_mvmt > 0:
+            tree3 = top_price_calc(key_figs)
+        elif key_figs.abs_price_mvmt < 0:
+            tree3 = bot_price_calc(key_figs)    
+        else:
+            tree3 = "neither"
+
+        # T.5 - market sentiment
+        if PI_market_state == "bull":
+            tree5 = "buy"
+        elif PI_market_state == "h_bull":
+            tree5 = "d_buy"
+        elif PI_market_state == "bear":
+            tree5 = "sell"
+        elif PI_market_state == "h_bear":
+            tree5 = "d_sell"
+        elif PI_market_state == "neutral" or PI_market_state == None:
+            tree5 = "neither" 
+        else:
+            tree5 = "neither"
+        tree_list = [tree2, tree3, tree5]
+        result = vote_counter(tree_list)
+
     else:
         result = "no_decision"
 
