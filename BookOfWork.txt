@@ -1,6 +1,7 @@
 Things to add:
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 - introduce dynamic risk, based on current positions??
+    - 23/07 - added in and working. Retail investors seem to hit the 0.99 limit easily, look to adjust trees to reduce likelihood of this happening?
 - liquidity selection 
 
 Things to fix:

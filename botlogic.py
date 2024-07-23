@@ -38,9 +38,9 @@ def order_type_calc(vote_count):
 def open_orders(id, orderbook, prio_price):
     open_prio_orders = False # flags true if there are orders at priority
     open_np_orders = False # flags true if there are orders away from priority 
+    open_prio_qty = 0
+    open_np_qty = 0
     for index, order in orderbook.iterrows():
-        open_prio_qty = 0
-        open_np_qty = 0
         if id == order["Trader_ID"] and order["Price"] == prio_price:
             open_prio_orders = True
             open_np_qty += order["Quantity"]
@@ -110,7 +110,7 @@ def setup_bot_decision (bot, IB_market_state):
     else:
         result = "no_decision"
 
-    return result, bot, state
+    return result, state
 
 def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderbook, sell_orderbook):
     # RP - Bernoulli risk probability test:
@@ -297,7 +297,7 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
         result = "no_decision"
         force_priortiy = False
     
-    return result, bot, state, force_priortiy
+    return result, state, force_priortiy
 
 def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
      # RP - Bernoulli risk probability test:
@@ -389,7 +389,7 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
             result = bot_action + "_" + order_flag
     else:
         result = "no_decision"
-    return result, bot, state
+    return result, state
 
 def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_log):
     # RP - Bernoulli risk probability test:
@@ -531,7 +531,7 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_l
             bot_action = 'sell'
             order_flag = order_type_calc(sell_vote)
             result = bot_action + "_" + order_flag
-    return result, bot, state, liquidity_flag
+    return result, state, liquidity_flag
 
 def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
     emotion_bias = "none"
@@ -710,7 +710,7 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
         result = "no_decision"
         emotion_bias = "none"
 
-    return result, bot, state, emotion_bias
+    return result, state, emotion_bias
 
 def PI_bot_decision (bot, PI_market_state, key_figs):
     def vote_counter(tree_list):
@@ -845,7 +845,7 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
     else:
         result = "no_decision"
 
-    return result, bot, state
+    return result, state
 
 
 # Below is the legacy blanket function - this is kept as a reference baseline for the original version of each decision tree
