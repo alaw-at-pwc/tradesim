@@ -205,8 +205,8 @@ def HRRI_risk(pnl_sub_result, exposure_result, open_mvmt, price_range, recent_mv
     aggregate_change = 0
     # Aggregating PnL test result
     pnl_tests = {
-        True: -0.010,
-        False: 0.010
+        True: -0.005,
+        False: 0.005
     }
     pnl = pnl_tests.get(pnl_sub_result)
     aggregate_change += pnl
@@ -245,10 +245,10 @@ def LRRI_risk(pnl_sub_result, exposure_result, open_mvmt, price_range, recent_mv
     aggregate_change += pnl
     # Aggregating exposure test result
     exposures = {
-        0 : 0.010,
-        1 : 0.005,
-        2 : -0.005,
-        3 : -0.010
+        0 : 0.005,
+        1 : 0.0025,
+        2 : -0.0025,
+        3 : -0.005
     }
     exposure = exposures.get(exposure_result)
     aggregate_change += exposure

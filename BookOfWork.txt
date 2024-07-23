@@ -1,8 +1,5 @@
 Things to add:
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
-- introduce dynamic risk, based on current positions??
-    - 23/07 - added in and working. Retail investors seem to hit the 0.99 limit easily, look to adjust trees to reduce likelihood of this happening?
-- liquidity selection 
 
 Things to fix:
 
@@ -85,3 +82,8 @@ Completed items:
 - market data period selection
     - 22/07 - added in but needs to be teseted for longer run sims, and for cases where the time does not fit so nicely. 
     - 23/07 - seems to be operating as expected
+- liquidity selection 
+    - 23/07 - added in selection, and seems to be working well
+- introduce dynamic risk, based on current positions??
+    - 23/07 - added in and working. Retail investors seem to hit the 0.99 limit easily, look to adjust trees to reduce likelihood of this happening?
+    - 23/07 - retail investors less likely to hit the 0.99 limit.  
