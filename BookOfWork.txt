@@ -2,11 +2,8 @@ Things to add:
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 - introduce dynamic risk, based on current positions??
 - liquidity selection 
-- market data period selection
-    - 22/07 - added in but needs to be teseted for longer run sims, and for cases where the time does not fit so nicely. 
 
 Things to fix:
-- some bots wealth not being to 2 d.p.
 
 Things to tweak:
 - how bots decide quantity and price level to place order 
@@ -78,3 +75,12 @@ Completed items:
     - 09/07 - IB traders will consider what open orders they have and will factor this into their decision making. however, no order cancellations are in the logic, aside from the default order cancellations
 - library list with current versions
     - 22/07 - added in
+- some bots wealth not being to 2 d.p.
+    - 23/07 - general fix to continually round all bots' wealth to 2dp
+- suppress future pandas warnings
+    - 23/07 - added in 
+- quantity becoming negative for bots, meaning they place negative orders 
+    - 23/07 - multiplied quantity by risk level in order to reduce quantity placed in market. added in a fail safe too
+- market data period selection
+    - 22/07 - added in but needs to be teseted for longer run sims, and for cases where the time does not fit so nicely. 
+    - 23/07 - seems to be operating as expected

@@ -16,8 +16,8 @@ def IB_order (result, bot, key_figs, force_priority, timestamp):
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     trader_id = bot["Trader_ID"]
-    max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
-    max_sell_quantity = bot["Asset"]
+    max_buy_quantity = round((bot["Wealth"] * bot["Risk"] )/ key_figs.market_price, 2)
+    max_sell_quantity = round(bot["Asset"] * bot["Risk"], 2)
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
 
     if result == 'buy_order' and force_priority == True:
@@ -114,8 +114,8 @@ def WM_order (result, bot, key_figs, timestamp):
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     trader_id = bot["Trader_ID"]
-    max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
-    max_sell_quantity = bot["Asset"]
+    max_buy_quantity = round((bot["Wealth"] * bot["Risk"] )/ key_figs.market_price, 2)
+    max_sell_quantity = round(bot["Asset"] * bot["Risk"], 2)
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
 
     if result == 'buy_order' and bid_ask_spread > 0.02:
@@ -163,8 +163,8 @@ def MM_order (result, bot, key_figs, liquidity_flag, timestamp):
     # D.2, D.3, D.4
     df_input_orders = pd.DataFrame(columns=["Trader_ID", "Timestamp", "Quantity", "Price", "Flag"])
     trader_id = bot["Trader_ID"]
-    max_buy_quantity = round(bot["Wealth"] / key_figs.market_price, 2)
-    max_sell_quantity = bot["Asset"] 
+    max_buy_quantity = round((bot["Wealth"] * bot["Risk"] )/ key_figs.market_price, 2)
+    max_sell_quantity = round(bot["Asset"] * bot["Risk"], 2)
     bid_ask_spread = key_figs.best_ask - key_figs.best_bid
     
     if liquidity_flag == True:
