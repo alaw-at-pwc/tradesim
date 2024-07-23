@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 # S.1 & S.2 & S.3
-def participant_creation (participant_num):
+def participant_creation (participant_num, liquidity):
     participant_num += 1
     i = 1
     profiles = ["IB Trader", "WM Trader", "Market Maker", "HR Retail Investor", "LR Retail Investor", "HR Private Investor", "LR Private Investor"]
@@ -56,58 +56,82 @@ def participant_creation (participant_num):
     df_participants["Risk"] = df_participants["Risk"].astype(float) 
     df_participants["Activity"] = df_participants["Activity"].astype(float)
 
-    def generate_ib():
-        asset = np.random.randint(500,1000)
-        wealth = np.random.randint(5000,10000)
+    # function to scale the values based on the liquidity setting
+    def liquidity_scaler(asset, wealth, activity, liquidity):
+        if liquidity == "High":
+            asset = 2 * asset
+            wealth = 2 * wealth
+            activity = activity ** 0.5
+        elif liquidity == "Medium":
+            asset = asset
+            wealth = wealth
+            activity = 0.8 * (activity ** 0.5)
+        elif liquidity == "Low":
+            asset = 0.5 * asset
+            wealth = 0.5 * wealth
+            activity = 0.5 * (activity ** 0.5)
+        return asset, wealth, activity 
+
+    # default generated values and then scaled for the liquidity market
+    def generate_ib(liquidity):
+        asset = np.random.randint(250,500)
+        wealth = np.random.randint(2500,5000)
         risk = np.random.uniform(0.01, 0.35)
         activity = np.random.uniform(0.60, 0.90)
+        asset, wealth, activity = liquidity_scaler(asset, wealth, activity, liquidity)
         return asset, wealth, risk, activity 
-    def generate_wm():
-        asset = np.random.randint(400,800)
-        wealth = np.random.randint(5000,9000)
+    def generate_wm(liquidity):
+        asset = np.random.randint(200,400)
+        wealth = np.random.randint(2500,4500)
         risk = np.random.uniform(0.01, 0.25)
         activity = np.random.uniform(0.01, 0.30)
+        asset, wealth, activity = liquidity_scaler(asset, wealth, activity, liquidity)
         return asset, wealth, risk, activity 
-    def generate_mm():
-        asset = np.random.randint(100,500)
-        wealth = np.random.randint(6000,12000)
+    def generate_mm(liquidity):
+        asset = np.random.randint(50,250)
+        wealth = np.random.randint(3000,6000)
         risk = np.random.uniform(0.01, 0.10)
         activity = np.random.uniform(0.70, 0.90)
+        asset, wealth, activity = liquidity_scaler(asset, wealth, activity, liquidity)
         return asset, wealth, risk, activity 
-    def generate_hrri():
-        asset = np.random.randint(1,200)
-        wealth = np.random.randint(500,4000)
-        risk = np.random.uniform(0.70, 1.0)
+    def generate_hrri(liquidity):
+        asset = np.random.randint(1,100)
+        wealth = np.random.randint(250,2000)
+        risk = np.random.uniform(0.70, 0.90)
         activity = np.random.uniform(0.30, 0.80)
+        asset, wealth, activity = liquidity_scaler(asset, wealth, activity, liquidity)
         return asset, wealth, risk, activity 
-    def generate_lrri():
-        asset = np.random.randint(1,200)
-        wealth = np.random.randint(500,4000)
+    def generate_lrri(liquidity):
+        asset = np.random.randint(1,100)
+        wealth = np.random.randint(250,2000)
         risk = np.random.uniform(0.50, 0.80)
         activity = np.random.uniform(0.30, 0.80)
+        asset, wealth, activity = liquidity_scaler(asset, wealth, activity, liquidity)
         return asset, wealth, risk, activity 
-    def generate_hrpi():
-        asset = np.random.randint(50,400)
-        wealth = np.random.randint(1000,5000)
+    def generate_hrpi(liquidity):
+        asset = np.random.randint(25,200)
+        wealth = np.random.randint(500,2500)
         risk = np.random.uniform(0.40, 0.80)
         activity = np.random.uniform(0.20, 0.50)
+        asset, wealth, activity = liquidity_scaler(asset, wealth, activity, liquidity)
         return asset, wealth, risk, activity 
-    def generate_lrpi():
-        asset = np.random.randint(50,400)
-        wealth = np.random.randint(1000,5000)
+    def generate_lrpi(liquidity):
+        asset = np.random.randint(25,200)
+        wealth = np.random.randint(500,2500)
         risk = np.random.uniform(0.20, 0.50)
         activity = np.random.uniform(0.20, 0.50)
+        asset, wealth, activity = liquidity_scaler(asset, wealth, activity, liquidity)
         return asset, wealth, risk, activity 
     
     # Defining the conditions for each profile type
     updates = [
-        {'condition': df_participants['Profile'] == "IB Trader", 'generate_values': lambda: generate_ib()},
-        {'condition': df_participants['Profile'] == "WM Trader", 'generate_values': lambda: generate_wm()},
-        {'condition': df_participants['Profile'] == "Market Maker",'generate_values': lambda: generate_mm()},
-        {'condition': df_participants['Profile'] == "HR Retail Investor",'generate_values': lambda: generate_hrri()},
-        {'condition': df_participants['Profile'] == "LR Retail Investor",'generate_values': lambda: generate_lrri()},
-        {'condition': df_participants['Profile'] == "HR Private Investor",'generate_values': lambda: generate_hrpi()},
-        {'condition': df_participants['Profile'] == "LR Private Investor",'generate_values': lambda: generate_lrpi()}
+        {'condition': df_participants['Profile'] == "IB Trader", 'generate_values': lambda: generate_ib(liquidity)},
+        {'condition': df_participants['Profile'] == "WM Trader", 'generate_values': lambda: generate_wm(liquidity)},
+        {'condition': df_participants['Profile'] == "Market Maker",'generate_values': lambda: generate_mm(liquidity)},
+        {'condition': df_participants['Profile'] == "HR Retail Investor",'generate_values': lambda: generate_hrri(liquidity)},
+        {'condition': df_participants['Profile'] == "LR Retail Investor",'generate_values': lambda: generate_lrri(liquidity)},
+        {'condition': df_participants['Profile'] == "HR Private Investor",'generate_values': lambda: generate_hrpi(liquidity)},
+        {'condition': df_participants['Profile'] == "LR Private Investor",'generate_values': lambda: generate_lrpi(liquidity)}
     ]
     # adding the traits for each profile type
     for update in updates:
