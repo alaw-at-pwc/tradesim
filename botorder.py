@@ -3,6 +3,12 @@ import random
 import numpy as np
 import pandas as pd
 
+def order_qty_check(df_input_orders):
+    for index, order in df_input_orders.iterrows():
+        if order["Quantity"] <= 0:
+            df_input_orders.drop(index=index, inplace=True)
+    return df_input_orders
+
 # deciding order qty levels across multiple price levels
 def liquidity_levels_calc(levels, prop_min, prop_max):
     scale = 0.1
@@ -107,7 +113,7 @@ def IB_order (result, bot, key_figs, force_priority, timestamp):
                 input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
                 df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
                 p_level_counter += 0.01
-
+    df_input_orders = order_qty_check(df_input_orders)
     return bot, df_input_orders
 
 def WM_order (result, bot, key_figs, timestamp):
@@ -157,6 +163,7 @@ def WM_order (result, bot, key_figs, timestamp):
         input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
     if not input_order.empty:
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+    df_input_orders = order_qty_check(df_input_orders)
     return bot, df_input_orders
 
 def MM_order (result, bot, key_figs, liquidity_flag, timestamp):
@@ -219,7 +226,7 @@ def MM_order (result, bot, key_figs, liquidity_flag, timestamp):
             input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
         if not input_order.empty:
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
-
+    df_input_orders = order_qty_check(df_input_orders)
     return bot, df_input_orders
 
 def RI_order (result, bot, key_figs, emotion_bias, timestamp):
@@ -291,6 +298,7 @@ def RI_order (result, bot, key_figs, emotion_bias, timestamp):
         input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
     if not input_order.empty:
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+    df_input_orders = order_qty_check(df_input_orders)
     return bot, df_input_orders
 
 def PI_order (result, bot, key_figs, timestamp):
@@ -350,6 +358,7 @@ def PI_order (result, bot, key_figs, timestamp):
         input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
     if not input_order.empty:
         df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
+    df_input_orders = order_qty_check(df_input_orders)
     return bot, df_input_orders
 
 # help create liquidity in orderbooks 
@@ -395,7 +404,7 @@ def liquidity_creator (bot, key_figs, timestamp):
             input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "ask"})
             df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
             p_level_counter += 0.01
-
+    df_input_orders = order_qty_check(df_input_orders)
     return bot, df_input_orders
 
 
