@@ -7,6 +7,10 @@ Things to tweak:
 - how bots decide quantity and price level to place order 
     - 04/07 - made bots have their own ways to decide quantity and price level. however, much of this is still up to chance
     - Should add a form of strategy, maybe encourage more executions to cause more variation in the price (wihtin reason) - should enoucrage more buy executions to happen, as price tends to trend downwards
+- Currently, the market trends downwards, and has difficulty rebounding back. Furthermore, bots are often making a loss, which is likely tied to the fact the price is trending down.
+    - 25/07 - made a fix around tree 1 referencing the wrong column of the transaction log. Small other fixes around paramters and decisions now means the market does not trend downards.
+    - 25/07 - added ability to track decisions made by bots in df_decicions
+- Test the price cancel section, and whether to just keep the basic far-away order element
 
 Completed items:
 - Look to fix botlogic.py so it can be used as a script to import in, for ease of navigation

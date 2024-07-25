@@ -6,10 +6,9 @@ df = pd.DataFrame({
     "Asset": [100, 140, 400, 420, 300]
 })
 
-profiles = ['A', 'B']
-condition = df["Profile"] != 'C'
-condition2 = df["Asset"] < 150
-mask = condition & condition2
-new_df = df[mask]
-
-print(new_df)
+new_profile = pd.Series({
+    "ID" : 6,
+    "Asset" : 200
+})
+df = pd.concat([df, new_profile.to_frame().T], ignore_index=True)
+print(df)

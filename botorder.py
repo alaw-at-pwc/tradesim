@@ -95,7 +95,7 @@ def IB_order (result, bot, key_figs, force_priority, timestamp):
     elif result == 'multiple_orders':
         num_buy_orders = np.random.randint(0,3)
         if num_buy_orders > 0: 
-            order_quantities = liquidity_levels_calc(num_buy_orders, 0.05, 0.10)
+            order_quantities = liquidity_levels_calc(num_buy_orders, 0.01, 0.05)
             p_level_counter = 0.01
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_bid - p_level_counter,2)
@@ -105,7 +105,7 @@ def IB_order (result, bot, key_figs, force_priority, timestamp):
                 p_level_counter += 0.01
         num_sell_orders = np.random.randint(0,3)
         if num_sell_orders > 0:
-            order_quantities = liquidity_levels_calc(num_sell_orders, 0.05, 0.10)
+            order_quantities = liquidity_levels_calc(num_sell_orders, 0.01, 0.05)
             p_level_counter = 0
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_ask + p_level_counter,2)

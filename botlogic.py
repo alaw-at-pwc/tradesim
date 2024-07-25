@@ -49,7 +49,7 @@ def open_orders(id, orderbook, prio_price):
             open_np_qty += order["Quantity"]
     return open_prio_orders, open_prio_qty, open_np_orders, open_np_qty
 
-def setup_bot_decision (bot, IB_market_state):
+def setup_bot_decision (bot, IB_market_state, df_decisions):
     # RP - Bernoulli risk probability test:
         # H0: bot will trade i.e. test fails, they will trade 
         # H1: bot will not trade i.e. test passes, they will be inactive
@@ -107,12 +107,22 @@ def setup_bot_decision (bot, IB_market_state):
             bot_action = 'sell'
             order_flag = order_type_calc(sell_vote)
             result = bot_action + "_" + order_flag
+        decision = pd.Series({
+            "Trader_ID": bot["Trader_ID"],
+            "Profile" : bot["Profile"],
+            "Risk" : bot["Risk"],
+            "Result" : result,
+            "Tree2" : tree2,
+            "Tree4" : tree4,
+            "Tree5" : tree5
+        })
+        df_decisions = pd.concat([df_decisions, decision.to_frame().T], ignore_index=True)
     else:
         result = "no_decision"
 
-    return result, state
+    return result, state, df_decisions
 
-def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderbook, sell_orderbook):
+def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderbook, sell_orderbook, df_decisions):
     # RP - Bernoulli risk probability test:
         # H0: bot will trade i.e. test fails, they will trade 
         # H1: bot will not trade i.e. test passes, they will be inactive
@@ -127,13 +137,13 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
         # T.1 - market movement tree
         # T.1.2: function to calculate the price movement in the last 25 transactions
         if len(transaction_log) > 24:
-            prev_price = transaction_log.iat[-25,4]
+            prev_price = transaction_log.iat[-25,-3]
         else:
-            prev_price = transaction_log.iat[-1,4]
+            prev_price = transaction_log.iat[-1,-3]
         market_delta = prev_price - key_figs.market_price
-        if market_delta >= 0.02:
+        if market_delta > 0.02:
             tree1 = 'sell'
-        elif market_delta <= -0.02:
+        elif market_delta < -0.02:
             tree1 = 'buy'
         else:
             tree1 = 'neither'
@@ -184,9 +194,13 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
             qty_sell_orderbook = sell_orderbook["Quantity"].sum()
             ordebook_ratio = qty_buy_orderbook / qty_sell_orderbook
 
-            if ordebook_ratio < 0.5:
+            if ordebook_ratio <= 0.25:
                 tree6 = "buy"
-            elif ordebook_ratio > 2:
+            elif ordebook_ratio < 0.5 and ordebook_ratio > 0.25:
+                tree6 = "sell"
+            elif ordebook_ratio > 2 and ordebook_ratio < 4:
+                tree6 = "buy"
+            elif ordebook_ratio >= 4:
                 tree6 = "sell"
             else: 
                 tree6 = "neither"
@@ -293,13 +307,29 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
             bot_action = 'sell'
             order_flag = order_type_calc(sell_vote)
             result = bot_action + "_" + order_flag
+
+        decision = pd.Series({
+            "Trader_ID": bot["Trader_ID"],
+            "Profile" : bot["Profile"],
+            "Risk" : bot["Risk"],
+            "Result" : result,
+            "T_Open" : t_open_order,
+            "Tree1" : tree1,
+            "Tree2" : tree2,
+            "Tree3" : tree3,
+            "Tree5" : tree5,
+            "Tree6" : tree6,
+            "Transactions" : tree_transaction,
+            "Prio" : force_priortiy
+        })
+        df_decisions = pd.concat([df_decisions, decision.to_frame().T], ignore_index=True)
     else:
         result = "no_decision"
         force_priortiy = False
     
-    return result, state, force_priortiy
+    return result, state, force_priortiy, df_decisions
 
-def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
+def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log, df_decisions):
      # RP - Bernoulli risk probability test:
         # H0: bot will trade i.e. test fails, they will trade 
         # H1: bot will not trade i.e. test passes, they will be inactive
@@ -314,13 +344,13 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
         # T.1 - market movement tree
         # T.1.2: function to calculate the price movement in the last 25 transactions
         if len(transaction_log) > 24:
-            prev_price = transaction_log.iat[-25,4]
+            prev_price = transaction_log.iat[-25,-3]
         else:
-            prev_price = transaction_log.iat[-1,4]
+            prev_price = transaction_log.iat[-1,-3]
         market_delta = prev_price - key_figs.market_price
-        if market_delta >= 0.02:
+        if market_delta > 0.02:
             tree1 = 'sell'
-        elif market_delta <= -0.02:
+        elif market_delta < -0.02:
             tree1 = 'buy'
         else:
             tree1 = 'neither'
@@ -387,11 +417,22 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log):
             bot_action = 'sell'
             order_flag = order_type_calc(sell_vote)
             result = bot_action + "_" + order_flag
+        decision = pd.Series({
+            "Trader_ID": bot["Trader_ID"],
+            "Profile" : bot["Profile"],
+            "Risk" : bot["Risk"],
+            "Result" : result,
+            "Tree1" : tree1,
+            "Tree2" : tree2,
+            "Tree3" : tree3,
+            "Tree5" : tree5
+        })
+        df_decisions = pd.concat([df_decisions, decision.to_frame().T], ignore_index=True)
     else:
         result = "no_decision"
-    return result, state
+    return result, state, df_decisions
 
-def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_log):
+def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_log, df_decisions):
     # RP - Bernoulli risk probability test:
         # H0: bot will trade i.e. test fails, they will trade 
         # H1: bot will not trade i.e. test passes, they will be inactive
@@ -531,9 +572,21 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_l
             bot_action = 'sell'
             order_flag = order_type_calc(sell_vote)
             result = bot_action + "_" + order_flag
-    return result, state, liquidity_flag
+        decision = pd.Series({
+            "Trader_ID": bot["Trader_ID"],
+            "Profile" : bot["Profile"],
+            "Risk" : bot["Risk"],
+            "Result" : result,
+            "Tree2" : tree2,
+            "Tree3" : tree3,
+            "Tree6" : tree6,
+            "Transactions" : tree_transaction,
+            "Liquidity" : liquidity_flag
+        })
+        df_decisions = pd.concat([df_decisions, decision.to_frame().T], ignore_index=True)
+    return result, state, liquidity_flag, df_decisions
 
-def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
+def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log, df_decisions):
     emotion_bias = "none"
     # B.3 - vote counting module. If counts are equal, generate random action
     def vote_counter(tree_list):
@@ -594,13 +647,13 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
         # T.1 - market movement tree
         # T.1.2: function to calculate the price movement in the last 25 transactions
         if len(transaction_log) > 24:
-            prev_price = transaction_log.iat[-25,4]
+            prev_price = transaction_log.iat[-25,-3]
         else:
-            prev_price = transaction_log.iat[-1,4]
+            prev_price = transaction_log.iat[-1,-3]
         market_delta = prev_price - key_figs.market_price
-        if market_delta >= 0.02:
+        if market_delta > 0.02:
             tree1 = 'sell'
-        elif market_delta <= -0.02:
+        elif market_delta < -0.02:
             tree1 = 'buy'
         else:
             tree1 = 'neither'
@@ -647,18 +700,30 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             tree5 = "neither" 
         tree_list = [tree1, tree2, tree4, tree5]
         result = vote_counter(tree_list)
+        decision = pd.Series({
+            "Trader_ID": bot["Trader_ID"],
+            "Profile" : bot["Profile"],
+            "Risk" : bot["Risk"],
+            "Result" : result,
+            "Tree1" : tree1,
+            "Tree2" : tree2,
+            "Tree4" : tree4,
+            "Tree5" : tree5,
+            "Emotion" : emotion_bias
+        })
+        df_decisions = pd.concat([df_decisions, decision.to_frame().T], ignore_index=True)
 
     elif state == "active" and high_risk == True: # Same decision tree, but with increased risk
         # T.1 - market movement tree
         # T.1.2: function to calculate the price movement in the last 25 transactions
         if len(transaction_log) > 24:
-            prev_price = transaction_log.iat[-25,4]
+            prev_price = transaction_log.iat[-25,-3]
         else:
-            prev_price = transaction_log.iat[-1,4]
+            prev_price = transaction_log.iat[-1,-3]
         market_delta = prev_price - key_figs.market_price
-        if market_delta >= 0.02:
+        if market_delta > 0.02:
             tree1 = 'sell'
-        elif market_delta <= -0.02:
+        elif market_delta < -0.02:
             tree1 = 'buy'
         else:
             tree1 = 'neither'
@@ -705,14 +770,26 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log):
             tree5 = "neither" 
         tree_list = [tree1, tree2, tree4, tree5]
         result = vote_counter(tree_list)
+        decision = pd.Series({
+            "Trader_ID": bot["Trader_ID"],
+            "Profile" : bot["Profile"],
+            "Risk" : bot["Risk"],
+            "Result" : result,
+            "Tree1" : tree1,
+            "Tree2" : tree2,
+            "Tree4" : tree4,
+            "Tree5" : tree5,
+            "Emotion" : emotion_bias
+        })
+        df_decisions = pd.concat([df_decisions, decision.to_frame().T], ignore_index=True)
 
     elif state == "inactive":
         result = "no_decision"
         emotion_bias = "none"
 
-    return result, state, emotion_bias
+    return result, state, emotion_bias, df_decisions
 
-def PI_bot_decision (bot, PI_market_state, key_figs):
+def PI_bot_decision (bot, PI_market_state, key_figs, df_decisions):
     def vote_counter(tree_list):
         # B.3 - vote counting module. If counts are equal, generate random action
         buy_vote = 0
@@ -798,6 +875,16 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
             tree5 = "neither"
         tree_list = [tree2, tree3, tree5]
         result = vote_counter(tree_list)
+        decision = pd.Series({
+            "Trader_ID": bot["Trader_ID"],
+            "Profile" : bot["Profile"],
+            "Risk" : bot["Risk"],
+            "Result" : result,
+            "Tree2" : tree2,
+            "Tree3" : tree3,
+            "Tree5" : tree5,
+        })
+        df_decisions = pd.concat([df_decisions, decision.to_frame().T], ignore_index=True)
     elif state == "active" and high_risk == True: # regular tree for low risk private investors 
         # T.2 - Calculating the asset value/ capital ratio
         asset_value = key_figs.market_price * bot["Asset"]
@@ -841,11 +928,20 @@ def PI_bot_decision (bot, PI_market_state, key_figs):
             tree5 = "neither"
         tree_list = [tree2, tree3, tree5]
         result = vote_counter(tree_list)
-
+        decision = pd.Series({
+            "Trader_ID": bot["Trader_ID"],
+            "Profile" : bot["Profile"],
+            "Risk" : bot["Risk"],
+            "Result" : result,
+            "Tree2" : tree2,
+            "Tree3" : tree3,
+            "Tree5" : tree5,
+        })
+        df_decisions = pd.concat([df_decisions, decision.to_frame().T], ignore_index=True)
     else:
         result = "no_decision"
 
-    return result, state
+    return result, state, df_decisions
 
 
 # Below is the legacy blanket function - this is kept as a reference baseline for the original version of each decision tree
