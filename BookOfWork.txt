@@ -1,4 +1,5 @@
 Things to add:
+- ability for a deep learning model to run during the simulation - see if it can create a form of strategy
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 
 Things to fix:
