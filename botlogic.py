@@ -142,9 +142,9 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
             prev_price = transaction_log.iat[-1,-3]
         market_delta = prev_price - key_figs.market_price
         if market_delta > 0.02:
-            tree1 = 'sell'
-        elif market_delta < -0.02:
             tree1 = 'buy'
+        elif market_delta < -0.02:
+            tree1 = 'sell'
         else:
             tree1 = 'neither'
 
@@ -188,22 +188,21 @@ def IB_bot_decision (bot, IB_market_state, key_figs, transaction_log, buy_orderb
             tree5 = "neither"
 
         # T.6 - orderbook consideration tree 
-        if key_figs.key_figs_test == 'pass':
-            # Calculating orderbook depth
-            qty_buy_orderbook = buy_orderbook["Quantity"].sum()
-            qty_sell_orderbook = sell_orderbook["Quantity"].sum()
-            ordebook_ratio = qty_buy_orderbook / qty_sell_orderbook
+        # Calculating orderbook depth
+        qty_buy_orderbook = buy_orderbook["Quantity"].sum()
+        qty_sell_orderbook = sell_orderbook["Quantity"].sum()
+        ordebook_ratio = qty_buy_orderbook / qty_sell_orderbook
 
-            if ordebook_ratio <= 0.25:
-                tree6 = "buy"
-            elif ordebook_ratio < 0.5 and ordebook_ratio > 0.25:
-                tree6 = "sell"
-            elif ordebook_ratio > 2 and ordebook_ratio < 4:
-                tree6 = "buy"
-            elif ordebook_ratio >= 4:
-                tree6 = "sell"
-            else: 
-                tree6 = "neither"
+        if ordebook_ratio <= 0.25:
+            tree6 = "buy"
+        elif ordebook_ratio < 0.5 and ordebook_ratio > 0.25:
+            tree6 = "buy"
+        elif ordebook_ratio > 2 and ordebook_ratio < 4:
+            tree6 = "sell"
+        elif ordebook_ratio >= 4:
+            tree6 = "sell"
+        else: 
+            tree6 = "neither"
 
         # T.TransactionQty - Evaluate the number of transactions on each side of the orderbook in the last 30 seconds
         transaction_buy_qty = 0
@@ -349,9 +348,9 @@ def WM_bot_decision (bot, IB_market_state, key_figs, transaction_log, df_decisio
             prev_price = transaction_log.iat[-1,-3]
         market_delta = prev_price - key_figs.market_price
         if market_delta > 0.02:
-            tree1 = 'sell'
-        elif market_delta < -0.02:
             tree1 = 'buy'
+        elif market_delta < -0.02:
+            tree1 = 'sell'
         else:
             tree1 = 'neither'
 
@@ -443,7 +442,7 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_l
     else: 
         state = "active"
 
-    if key_figs.key_figs_test == 't_semipass':
+    '''if key_figs.key_figs_test == 't_semipass':
         # This forces the bot to make an order in the market if an orderbook is empty, even if inactive
         if key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_pass":
             tree6 = "buy"
@@ -453,9 +452,9 @@ def MM_bot_decision (bot, key_figs, buy_orderbook, sell_orderbook, transaction_l
             force_flag = "force"
         elif key_figs.buy_orderbook_test == "b_fail" and key_figs.sell_orderbook_test == "s_fail":
             tree6 = "random_order"
-            force_flag = "force"
+            force_flag = "force"'''
 
-    elif state == "active":
+    if state == "active":
         # T.2 - Calculating the asset value/ capital ratio
         asset_value = key_figs.market_price * bot["Asset"]
         avc_ratio = asset_value / bot["Wealth"]
@@ -652,9 +651,9 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log, df_decisio
             prev_price = transaction_log.iat[-1,-3]
         market_delta = prev_price - key_figs.market_price
         if market_delta > 0.02:
-            tree1 = 'sell'
-        elif market_delta < -0.02:
             tree1 = 'buy'
+        elif market_delta < -0.02:
+            tree1 = 'sell'
         else:
             tree1 = 'neither'
 
@@ -722,9 +721,9 @@ def RI_bot_decision (bot, RI_market_state, key_figs, transaction_log, df_decisio
             prev_price = transaction_log.iat[-1,-3]
         market_delta = prev_price - key_figs.market_price
         if market_delta > 0.02:
-            tree1 = 'sell'
-        elif market_delta < -0.02:
             tree1 = 'buy'
+        elif market_delta < -0.02:
+            tree1 = 'sell'
         else:
             tree1 = 'neither'
 
