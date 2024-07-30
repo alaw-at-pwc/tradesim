@@ -1,8 +1,10 @@
 Things to add:
 - orderbook replay - takes in excel file
+    - rearrange front end
+    - add ability to scale time and replay (using a play button type)
     - bug fixes needed are as follows:
         - figure out cause for mismatch in time conversions, so not reliant on just a "x - 1 hour" to calculate the time
-        - figure out how to display orders, i.e. order logic to figure out if it was open at that point in time (figure out logic first) 
+        - figure out how to display orders, i.e. order logic to figure out if it was open at that point in time (figure out logic first) - fixed
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 
 Things to fix:
