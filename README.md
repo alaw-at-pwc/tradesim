@@ -41,5 +41,12 @@ Once you have ended the simulation, the below cells provide functions to perform
 2. The performance of the market overall throughout the simulation;
 3. The highest and lowest performing bots:
 4. The aggregated performance for each market participant type.
-5. 
+
 Should you wish to view these, run each of the corresponding cells, which will display the reuslts below the cell. 
+
+### Orderbook Replay 
+The [*replay.ipynb*](https://github.com/alaw-at-pwc/tradesim/blob/replay/replay.ipynb) script allows for the user to replay what happened during the simulation, based on the output file.
+- Run the first cell block, which should then generate the front-end replay UI.
+- Enter the **full file name** e.g. output.xlsx, and click the submit button.
+- If successful, you will then be able to specify a time (in seconds) or use the play button to view the market.
+- The '<<<' allows for the user to rewind if desired, whilst '>>>' forward replay is selected by default, with the speed of the replay being able to be selected by the buttons to the right.  
