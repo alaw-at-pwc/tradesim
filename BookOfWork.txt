@@ -1,4 +1,5 @@
 Things to add:
+- market opening system - way for bots to decide the market open price, rather then an arbitrary number
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 
 Things to fix:
