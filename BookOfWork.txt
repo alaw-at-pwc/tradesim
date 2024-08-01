@@ -2,6 +2,8 @@ Things to add:
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 
 Things to fix:
+- issue during market setup - first few transactions for whatever reason do no credit back the passive pariticpant in the trade 
+
 
 Things to tweak:
 - how bots decide quantity and price level to place order 

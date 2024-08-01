@@ -93,7 +93,7 @@ def IB_order (result, bot, key_figs, force_priority, timestamp):
         df_input_orders = pd.concat([df_input_orders, scd_input_order.to_frame().T], ignore_index=True)
 
     elif result == 'multiple_orders':
-        num_buy_orders = np.random.randint(0,3)
+        num_buy_orders = np.random.randint(0,2)
         if num_buy_orders > 0: 
             order_quantities = liquidity_levels_calc(num_buy_orders, 0.01, 0.05)
             p_level_counter = 0.01
@@ -103,10 +103,10 @@ def IB_order (result, bot, key_figs, force_priority, timestamp):
                 input_order = pd.Series({"Trader_ID" : trader_id, "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price, "Flag" : "bid"})
                 df_input_orders = pd.concat([df_input_orders, input_order.to_frame().T], ignore_index=True)
                 p_level_counter += 0.01
-        num_sell_orders = np.random.randint(0,3)
+        num_sell_orders = np.random.randint(0,2)
         if num_sell_orders > 0:
             order_quantities = liquidity_levels_calc(num_sell_orders, 0.01, 0.05)
-            p_level_counter = 0
+            p_level_counter = 0.01
             for order_qty in order_quantities:
                 order_price = round(key_figs.best_ask + p_level_counter,2)
                 order_quantity = round(order_qty * max_sell_quantity)

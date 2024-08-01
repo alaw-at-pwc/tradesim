@@ -3,6 +3,7 @@
 pandas==2.2.2
 numpy==2.0.0
 openpyxl==3.1.5
+scipy==1.14.0
 
 # Visualisation related packages
 matplotlib==3.9.1
