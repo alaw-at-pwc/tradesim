@@ -1,4 +1,5 @@
 import pandas as pd
+from scipy.optimize import fsolve
 #################################################################################################################
 ########################################### BEGINING OF RISK TESTS ##############################################
 #################################################################################################################
@@ -314,6 +315,39 @@ def LRPI_risk(pnl_sub_result, exposure_result, volatility_result):
     aggregate_change += volatility
     return aggregate_change
 
+# These functions ensure that risks stay capped within a sensible boundary for each profile type
+def risk_function_medium(entry_risk, risk_coeff): # applicable for IB and LRPI
+    benchmark =fsolve(lambda x : x**risk_coeff - ((x ** -(risk_coeff)) - 1),x0=0.5)
+    if entry_risk > benchmark:
+        new_risk = (entry_risk ** -(risk_coeff)) - 1
+    else:
+        new_risk = entry_risk ** risk_coeff
+    return new_risk
+
+def risk_function_low(entry_risk, risk_coeff): # applicable for market makers and wealth managers
+    benchmark =fsolve(lambda x : x**risk_coeff - ((x ** -(risk_coeff)) - 2.5),x0=0.3)
+    if entry_risk > benchmark:
+        new_risk = (entry_risk ** -(risk_coeff)) - 2.5
+    else:
+        new_risk = entry_risk ** risk_coeff
+    return new_risk
+
+def risk_function_high(entry_risk, risk_coeff): # applicable for LRRI and HRRI
+    benchmark =fsolve(lambda x : x**risk_coeff - ((x ** -(risk_coeff)) - 0.5),x0=0.7)
+    if entry_risk > benchmark:
+        new_risk = (entry_risk ** -(risk_coeff)) - 0.5
+    else:
+        new_risk = entry_risk ** risk_coeff
+    return new_risk
+
+def risk_function_extreme(entry_risk, risk_coeff): # applicbale for HRRI
+    benchmark =fsolve(lambda x : x**risk_coeff - ((x ** -(risk_coeff)) - 0.25),x0=0.5)
+    if entry_risk > benchmark:
+        new_risk = (entry_risk ** -(risk_coeff)) - 0.25
+    else:
+        new_risk = entry_risk ** risk_coeff
+    return new_risk
+
 # Conducting all tests
 def risk_calculation(bot, buy_orderbook, sell_orderbook, key_figs, transaction_log, risk_df):
     if bot["Profile"] == "HR Retail Investor" or bot["Profile"] == "LR Retail Investor":
@@ -337,8 +371,18 @@ def risk_calculation(bot, buy_orderbook, sell_orderbook, key_figs, transaction_l
     risk_change = conditions.get(bot["Profile"])
     risk_coeff = 1 - risk_change
 
-    # maintain a history of risk changes for testing
-    new_risk = bot["Risk"] ** risk_coeff
+    # calculate new risk level, and maintain a history of risk changes for testing
+    conditions = {
+        "IB Trader" : risk_function_medium(bot["Risk"], risk_coeff),
+        "WM Trader" : risk_function_low(bot["Risk"], risk_coeff),
+        "Market Maker" : risk_function_low(bot["Risk"], risk_coeff),
+        "HR Retail Investor" : risk_function_extreme(bot["Risk"], risk_coeff),
+        "LR Retail Investor" : risk_function_high(bot["Risk"], risk_coeff),
+        "HR Private Investor" : risk_function_high(bot["Risk"], risk_coeff),
+        "LR Private Investor" : risk_function_medium(bot["Risk"], risk_coeff)
+    }
+    new_risk = conditions.get(bot["Profile"])
+
     risk_log = pd.Series({"Trader_ID" : bot["Trader_ID"], "Old Risk" : bot["Risk"], "New Risk" : new_risk, "PnL": pnl_result, "Exposure" : exposure_result, "Volatility" : volatility_result})
     risk_df = pd.concat([risk_df, risk_log.to_frame().T], ignore_index=True)
 
