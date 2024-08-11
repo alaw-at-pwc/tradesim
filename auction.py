@@ -42,6 +42,11 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
     timestamp = dt.datetime.now()
     new_order = False
     action = None
+    # sets the order ID
+    if len(open_auction_log) < 1:                                       
+            order_id = 1
+    else:
+        order_id = int(open_auction_log.iloc[-1,0] + 1)  
     # check if orders already exist 
     open_bot_orders = open_auction_log[open_auction_log["Trader_ID"] == bot["Trader_ID"]]
     open_bot_orders = open_bot_orders[open_bot_orders["Status"] == "Open"]
@@ -150,7 +155,7 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                         version_count = int(version_count + 1)
                     except:
                         version_count = 2
-                    to_log = pd.Series({"Order_ID": live_order["Order_ID"], "Trader_ID" : live_order["Trader_ID"], "Timestamp" : amend_time, "Quantity" : new_qty, "Price" : new_price, "Side": "Buy", "Status": "Open", "Update_Timestamp": amend_time, "Version": version_count})
+                    to_log = pd.Series({"Order_ID": live_order["Order_ID"], "Trader_ID" : live_order["Trader_ID"], "Timestamp" : amend_time, "Quantity" : new_qty, "Price" : new_price, "Side": live_order["Side"], "Status": "Open", "Update_Timestamp": amend_time, "Version": version_count})
                     open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
                     new_price = round(new_price, 2)
                     if new_qty <= 0:
@@ -182,15 +187,9 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                     new_order == True
 
         else:                                                                       # if bot has no orders in the market, do basic decision
-            # sets the order ID
-            if len(open_auction_log) < 1:                                       
-                order_id = 1
-            else:
-                order_id = int(open_auction_log.iloc[-1,0] + 1) 
-
             # benchmark to decide the side
             wealth_asset_ratio = bot["Wealth"] / bot["Asset"] 
-            if wealth_asset_ratio >= 11:
+            if wealth_asset_ratio < 11:
                 order_price = round(wealth_asset_ratio, 2)
                 order_quantity = round((bot["Wealth"] / order_price) * bot["Risk"]) + 1
 
@@ -200,7 +199,7 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                 to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Buy", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
                 open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
 
-            elif wealth_asset_ratio < 11:
+            elif wealth_asset_ratio >= 11:
                 order_quantity = round(bot["Asset"] * bot["Risk"]) + 1
                 order_price = round(bot["Asset"] / order_quantity, 2) 
 
@@ -219,14 +218,9 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
 
     # placing a new order if flagged to do so 
     if new_order == True:
-        # sets the order ID
-        if len(open_auction_log) < 1:                                       
-                order_id = 1
-        else:
-            order_id = int(open_auction_log.iloc[-1,0] + 1)  
         # benchmark to decide the side
         wealth_asset_ratio = bot["Wealth"] / bot["Asset"] 
-        if wealth_asset_ratio >= 11:
+        if wealth_asset_ratio < 11:
             order_price = round(wealth_asset_ratio, 2) 
             order_quantity = round((bot["Wealth"] / order_price) * (bot["Risk"]/2)) + 1 # quantity at half
 
@@ -236,7 +230,7 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
             to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Buy", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
             open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
 
-        elif wealth_asset_ratio < 11:
+        elif wealth_asset_ratio >= 11:
             order_quantity = round(bot["Asset"] * (bot["Risk"]/2)) + 1  # quantity at half
             order_price = round(bot["Asset"] / order_quantity, 2)
 
@@ -490,53 +484,23 @@ def matching_logic(df_participants, buy_orders, sell_orders, type_clear, open_au
                     break
     return df_participants, transaction_log, open_auction_log
 
-def open_auction(df_participants):
-    # setup of auction orderbooks and logs 
-    buy_auction_orderbook = pd.DataFrame(columns=["Order_ID", "Trader_ID", "Timestamp", "Quantity", "Price"])
-    sell_auction_orderbook = pd.DataFrame(columns=["Order_ID", "Trader_ID", "Timestamp", "Quantity", "Price"])
-    open_auction_log = pd.DataFrame(columns=["Order_ID", "Trader_ID", "Timestamp", "Quantity", "Price", "Side", "Status", "Update_Timestamp", "Version"])
-
-    # setting the length of the auction call period 
-    current_time = time.time()
-
-    auction_end = current_time + 30
-    # call period loop, where bots place orders into market
-    while current_time < auction_end:
-        current_time = time.time()
-        df_available = ps.iteration_start(df_participants) 
-        for index, bot in df_available.iterrows():
-            # run bot logic that decides price level and quantity for the order
-            buy_auction_orderbook, sell_auction_orderbook, open_auction_log = bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_auction_log)
-            delay = round((1/bot["Activity"]) * abs(np.random.randint(1,20)))
-            bot["Delay"] = delay + 1
-        if len(df_available) > 0:
-            merged_df = df_participants.merge(df_available, on="Trader_ID", how='left', suffixes   =('_old', '_new'))
-            merged_df['Delay'] = merged_df['Delay_new'].fillna(merged_df['Delay_old']).infer_objects(copy=False)
-            merged_df.drop(['Delay_old','Delay_new'], axis=1, inplace=True)
-            merged_df['Trader_ID'] = merged_df['Trader_ID'].astype(int)
-            df_participants.update(merged_df)
-        # reset time
-        df_participants["Delay"] = df_participants["Delay"].apply(lambda x: abs(x - 1))
-        df_participants["Wealth"] = df_participants["Wealth"].apply(lambda x: round(x, 2))     
+def open_auction_end(df_participants, buy_auction_orderbook, sell_auction_orderbook, open_auction_log):  
     # once call period has ended, find clearing price, and credit and debit bots accordingly 
     buy_agg_orderbook = pd.DataFrame(columns=["Price", "Quantity"])
     buy_agg_orderbook = buy_auction_orderbook.groupby("Price").agg({"Quantity" : 'sum'}).reset_index()
     buy_agg_orderbook.columns = ['Price', 'Total Quantity']
     buy_auction_orderbook.sort_values(by=["Price"], ascending=False, inplace=True)
-    print(buy_agg_orderbook)
 
     sell_agg_orderbook = pd.DataFrame(columns=["Price", "Quantity"])
     sell_agg_orderbook = sell_auction_orderbook.groupby("Price").agg({"Quantity" : 'sum'}).reset_index()
     sell_agg_orderbook.columns = ['Price', 'Total Quantity']
     sell_auction_orderbook.sort_values(by=["Price"], ascending=True, inplace=True)
-    print(sell_agg_orderbook)
 
     # finds the only price levels that are present in both buy and sell orderbooks
     aggregated_orderbooks = buy_agg_orderbook.merge(sell_agg_orderbook, how='inner', on='Price', suffixes=('_buy', '_sell'))
     aggregated_orderbooks["Delta"] = abs(aggregated_orderbooks["Total Quantity_buy"] - aggregated_orderbooks["Total Quantity_sell"])
     aggregated_orderbooks["Qty_Sum"] = aggregated_orderbooks["Total Quantity_buy"] + aggregated_orderbooks["Total Quantity_sell"]
     aggregated_orderbooks.sort_values(by=["Qty_Sum", "Delta"], ascending=[False, True], inplace=True)
-    print(aggregated_orderbooks)
     clearing_price = aggregated_orderbooks["Price"].iloc[0]
 
     # extract orders to only those that can be cleared
