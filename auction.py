@@ -38,13 +38,50 @@ class auction_state:
             self.priroity_gap = None
             self.provisional_clear_check = 'no_clear'
 
-def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_auction_log):
+def pos_price(price):
+    if price <= 0:
+        price = 0.01
+    return price
+
+def order_decision(order_id, bot, buy_auction_orderbook, sell_auction_orderbook, open_auction_log):
+    # benchmark to decide the side
+    wealth_asset_ratio = bot["Wealth"] / bot["Asset"] 
     timestamp = dt.datetime.now()
+    if wealth_asset_ratio >= 11:
+        order_quantity = round((bot["Wealth"]) * (bot["Risk"]/2)) + 1 # quantity at half
+        order_price = round(wealth_asset_ratio * (order_quantity ** (-2 * bot["Risk"])), 2) # demand curve function
+        order_price = pos_price(order_price)
+
+        # append order to live log and historic log
+        order = pd.Series({"Order_ID": order_id, "Trader_ID" : bot["Trader_ID"], "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price})
+        buy_auction_orderbook = pd.concat([buy_auction_orderbook, order.to_frame().T], ignore_index=True)
+        to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Buy", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
+        open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
+
+    elif wealth_asset_ratio < 11:
+        order_quantity = round(bot["Asset"] * (bot["Risk"]/2)) + 1  # quantity at half
+        order_price = round(((order_quantity ** (1 + bot["Risk"])) / wealth_asset_ratio), 2) # supply curve function
+        order_price = pos_price(order_price)
+
+        # append order to live log and historic log
+        order = pd.Series({"Order_ID": order_id, "Trader_ID" : bot["Trader_ID"], "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price})
+        sell_auction_orderbook = pd.concat([sell_auction_orderbook, order.to_frame().T], ignore_index=True)
+        to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Sell", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
+        open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
+            
+    # Sorting the orderbooks 
+    buy_auction_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[False, True], inplace=True)
+    sell_auction_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[True, True], inplace=True)
+    open_auction_log.sort_values(by=["Order_ID", "Version"], ascending=[True, True], inplace=True)
+
+    return buy_auction_orderbook, sell_auction_orderbook, open_auction_log
+
+def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_auction_log):
     new_order = False
     action = None
     # sets the order ID
     if len(open_auction_log) < 1:                                       
-            order_id = 1
+        order_id = 1
     else:
         order_id = int(open_auction_log.iloc[-1,0] + 1)  
     # check if orders already exist 
@@ -67,8 +104,9 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                         qty_gap = round((target_qty - wealth_ratio) * np.random.uniform(0.01, 1.0))
                         new_qty = abs(live_order["Quantity"] + qty_gap)
 
-                        if live_order["Price"] == figures.auction_best_bid:
-                            # decreases the best_bid price
+                        test_val = np.random.random() # run the risk test to check whether to raise price towards best bid, or changing the price 
+                        if test_val > bot["Risk"]:  
+                            # decreases the price
                             price_diff = round(figures.priroity_gap * np.random.uniform(0.1, 1.0), 2)
                             new_price = live_order["Price"] - price_diff
                         else:
@@ -86,8 +124,8 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                         action = "Amend"    
                         qty_gap = round((target_qty - asset_ratio) * np.random.uniform(0.01, 1.0))
                         new_qty = abs(live_order["Quantity"] + qty_gap)
-
-                        if live_order["Price"] == figures.auction_best_ask:
+                        test_val = np.random.random() # run the risk test to check whether to reduce price towards best ask, or changing the price 
+                        if test_val > bot["Risk"]:  
                             # increases the best_ask price
                             price_diff = round(figures.priroity_gap * np.random.uniform(0.1, 1.0), 2)
                             new_price = live_order["Price"] + price_diff
@@ -157,7 +195,7 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                         version_count = 2
                     to_log = pd.Series({"Order_ID": live_order["Order_ID"], "Trader_ID" : live_order["Trader_ID"], "Timestamp" : amend_time, "Quantity" : new_qty, "Price" : new_price, "Side": live_order["Side"], "Status": "Open", "Update_Timestamp": amend_time, "Version": version_count})
                     open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
-                    new_price = round(new_price, 2)
+                    new_price = round(pos_price(new_price), 2)
                     if new_qty <= 0:
                         new_qty = 1
                     new_qty = round(new_qty)
@@ -186,64 +224,15 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                         sell_auction_orderbook.drop(sell_auction_orderbook[sell_auction_orderbook["Order_ID"] == live_order["Order_ID"]].index, inplace=True)
                     new_order == True
 
-        else:                                                                       # if bot has no orders in the market, do basic decision
-            # benchmark to decide the side
-            wealth_asset_ratio = bot["Wealth"] / bot["Asset"] 
-            if wealth_asset_ratio < 11:
-                order_price = round(wealth_asset_ratio, 2)
-                order_quantity = round((bot["Wealth"] / order_price) * bot["Risk"]) + 1
-
-                # append order to live log and historic log
-                order = pd.Series({"Order_ID": order_id, "Trader_ID" : bot["Trader_ID"], "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price})
-                buy_auction_orderbook = pd.concat([buy_auction_orderbook, order.to_frame().T], ignore_index=True)
-                to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Buy", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
-                open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
-
-            elif wealth_asset_ratio >= 11:
-                order_quantity = round(bot["Asset"] * bot["Risk"]) + 1
-                order_price = round(bot["Asset"] / order_quantity, 2) 
-
-                # append order to live log and historic log
-                order = pd.Series({"Order_ID": order_id, "Trader_ID" : bot["Trader_ID"], "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price})
-                sell_auction_orderbook = pd.concat([sell_auction_orderbook, order.to_frame().T], ignore_index=True)
-                to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Sell", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
-                open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
+    else:                                                                       # if bot has no orders in the market, do basic decision
+        new_order = True
     
     # RP - Bernoulli risk probability test to place another order into the auction:
     # H0: bot will not place a new order 
     # H1: bot will place a new order - high risk option
     test_val = np.random.random()
-    if test_val > bot["Risk"]:  
-        new_order = True
-
-    # placing a new order if flagged to do so 
-    if new_order == True:
-        # benchmark to decide the side
-        wealth_asset_ratio = bot["Wealth"] / bot["Asset"] 
-        if wealth_asset_ratio < 11:
-            order_price = round(wealth_asset_ratio, 2) 
-            order_quantity = round((bot["Wealth"] / order_price) * (bot["Risk"]/2)) + 1 # quantity at half
-
-            # append order to live log and historic log
-            order = pd.Series({"Order_ID": order_id, "Trader_ID" : bot["Trader_ID"], "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price})
-            buy_auction_orderbook = pd.concat([buy_auction_orderbook, order.to_frame().T], ignore_index=True)
-            to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Buy", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
-            open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
-
-        elif wealth_asset_ratio >= 11:
-            order_quantity = round(bot["Asset"] * (bot["Risk"]/2)) + 1  # quantity at half
-            order_price = round(bot["Asset"] / order_quantity, 2)
-
-            # append order to live log and historic log
-            order = pd.Series({"Order_ID": order_id, "Trader_ID" : bot["Trader_ID"], "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price})
-            sell_auction_orderbook = pd.concat([sell_auction_orderbook, order.to_frame().T], ignore_index=True)
-            to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Sell", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
-            open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
-            
-    # Sorting the orderbooks 
-    buy_auction_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[False, True], inplace=True)
-    sell_auction_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[True, True], inplace=True)
-    open_auction_log.sort_values(by=["Order_ID", "Version"], ascending=[True, True], inplace=True)
+    if test_val > bot["Risk"] or new_order==True:  
+        buy_auction_orderbook, sell_auction_orderbook, open_auction_log = order_decision(order_id, bot, buy_auction_orderbook, sell_auction_orderbook, open_auction_log)
 
     return buy_auction_orderbook, sell_auction_orderbook, open_auction_log
 
