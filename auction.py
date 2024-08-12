@@ -478,12 +478,12 @@ def open_auction_end(df_participants, buy_auction_orderbook, sell_auction_orderb
     buy_agg_orderbook = pd.DataFrame(columns=["Price", "Quantity"])
     buy_agg_orderbook = buy_auction_orderbook.groupby("Price").agg({"Quantity" : 'sum'}).reset_index()
     buy_agg_orderbook.columns = ['Price', 'Total Quantity']
-    buy_auction_orderbook.sort_values(by=["Price"], ascending=False, inplace=True)
+    buy_agg_orderbook.sort_values(by=["Price"], ascending=False, inplace=True)
 
     sell_agg_orderbook = pd.DataFrame(columns=["Price", "Quantity"])
     sell_agg_orderbook = sell_auction_orderbook.groupby("Price").agg({"Quantity" : 'sum'}).reset_index()
     sell_agg_orderbook.columns = ['Price', 'Total Quantity']
-    sell_auction_orderbook.sort_values(by=["Price"], ascending=True, inplace=True)
+    sell_agg_orderbook.sort_values(by=["Price"], ascending=True, inplace=True)
 
     # finds the only price levels that are present in both buy and sell orderbooks
     aggregated_orderbooks = buy_agg_orderbook.merge(sell_agg_orderbook, how='inner', on='Price', suffixes=('_buy', '_sell'))

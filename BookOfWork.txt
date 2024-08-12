@@ -1,8 +1,10 @@
 Things to add:
 - market opening system - way for bots to decide the market open price, rather then an arbitrary number
     - working but the following is needed:
-        - integration into simulatorcode.ipynb using a separate auction thread
+        - thread is working, but need to ensure the threads are being handled appropriately, but works. 
         - polish up front end visuals
+        - enable user input to orders
+        - further calibration on prices (looking at opposite side to influence price setting decision to converge towards a central point easier)
 - button to enable variable news flashes - randomly throughout sim, flash up random news on the front end, which could lead to drastic changes. 
 
 Things to fix:
