@@ -106,8 +106,8 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
 
                         test_val = np.random.random() # run the risk test to check whether to raise price towards best bid, or changing the price 
                         if test_val > bot["Risk"]:  
-                            # decreases the price
-                            price_diff = round(figures.priroity_gap * np.random.uniform(0.1, 1.0), 2)
+                            # decreases the price towrads best_ask
+                            price_diff = round((live_order["Price"] - figures.auction_best_ask) * np.random.uniform(0.1, 1.0), 2)
                             new_price = live_order["Price"] - price_diff
                         else:
                             # raise price towards best_bid    
@@ -126,8 +126,8 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                         new_qty = abs(live_order["Quantity"] + qty_gap)
                         test_val = np.random.random() # run the risk test to check whether to reduce price towards best ask, or changing the price 
                         if test_val > bot["Risk"]:  
-                            # increases the best_ask price
-                            price_diff = round(figures.priroity_gap * np.random.uniform(0.1, 1.0), 2)
+                            # increases theprice towards best_bid
+                            price_diff = round((figures.auction_best_bid - live_order["Price"]) * np.random.uniform(0.1, 1.0), 2)
                             new_price = live_order["Price"] + price_diff
                         else:
                             # lower price towards best_ask  
@@ -222,7 +222,37 @@ def bot_auction_logic(bot, buy_auction_orderbook, sell_auction_orderbook, open_a
                         buy_auction_orderbook.drop(buy_auction_orderbook[buy_auction_orderbook["Order_ID"] == live_order["Order_ID"]].index, inplace=True)
                     elif live_order["Side"] == "Sell":
                         sell_auction_orderbook.drop(sell_auction_orderbook[sell_auction_orderbook["Order_ID"] == live_order["Order_ID"]].index, inplace=True)
-                    new_order == True
+                    # Place logic to place a new order, but using current best bid and auction prices to place an update, more appropriate order
+                    # benchmark to decide the side
+                    wealth_asset_ratio = bot["Wealth"] / bot["Asset"] 
+                    timestamp = dt.datetime.now()
+                    if wealth_asset_ratio >= 11:
+                        order_quantity = round((bot["Wealth"]) * (bot["Risk"]/2)) + 1 # quantity at half
+                        order_price = round(figures.auction_best_bid * (order_quantity ** (-2 * bot["Risk"])), 2) # demand curve function
+                        order_price = pos_price(order_price)
+
+                        # append order to live log and historic log
+                        order = pd.Series({"Order_ID": order_id, "Trader_ID" : bot["Trader_ID"], "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price})
+                        buy_auction_orderbook = pd.concat([buy_auction_orderbook, order.to_frame().T], ignore_index=True)
+                        to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Buy", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
+                        open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
+
+                    elif wealth_asset_ratio < 11:
+                        order_quantity = round(bot["Asset"] * (bot["Risk"]/2)) + 1  # quantity at half
+                        order_price = round(((figures.auction_best_ask ** (1 + bot["Risk"])) / wealth_asset_ratio), 2) # supply curve function
+                        order_price = pos_price(order_price)
+
+                        # append order to live log and historic log
+                        order = pd.Series({"Order_ID": order_id, "Trader_ID" : bot["Trader_ID"], "Timestamp" : timestamp, "Quantity" : order_quantity, "Price" : order_price})
+                        sell_auction_orderbook = pd.concat([sell_auction_orderbook, order.to_frame().T], ignore_index=True)
+                        to_log = pd.Series({"Order_ID": order["Order_ID"], "Trader_ID" : order["Trader_ID"], "Timestamp" : order["Timestamp"], "Quantity" : order["Quantity"], "Price" : order["Price"], "Side": "Sell", "Status": "Open", "Update_Timestamp": order["Timestamp"], "Version": 1})
+                        open_auction_log = pd.concat([open_auction_log, to_log.to_frame().T], ignore_index=True)
+                            
+                    # Sorting the orderbooks 
+                    buy_auction_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[False, True], inplace=True)
+                    sell_auction_orderbook.sort_values(by=["Price", "Timestamp"], ascending=[True, True], inplace=True)
+                    open_auction_log.sort_values(by=["Order_ID", "Version"], ascending=[True, True], inplace=True)
+
 
     else:                                                                       # if bot has no orders in the market, do basic decision
         new_order = True
@@ -264,7 +294,7 @@ def matching_logic(df_participants, buy_orders, sell_orders, type_clear, open_au
         df_participants.loc[df_participants["Trader_ID"] == sell_id, "Asset"] -= quantity
         return df_participants
     
-    if type_clear == "equal" or "buy_excess":
+    if type_clear == "equal" or type_clear == "buy_excess":
         for index, sell_order in sell_orders.iterrows():
             sell_quantity = sell_order["Quantity"]
 
@@ -372,7 +402,7 @@ def matching_logic(df_participants, buy_orders, sell_orders, type_clear, open_au
         for index, buy_order in buy_orders.iterrows():
             buy_quantity = buy_order["Quantity"]
 
-            # Pull best bid info
+            # Pull best ask info
             sell_id = sell_orders['Trader_ID'].iloc[0]
             sell_order_id = sell_orders['Order_ID'].iloc[0]
             sell_qty = sell_orders['Quantity'].iloc[0]
@@ -487,9 +517,13 @@ def open_auction_end(df_participants, buy_auction_orderbook, sell_auction_orderb
 
     # finds the only price levels that are present in both buy and sell orderbooks
     aggregated_orderbooks = buy_agg_orderbook.merge(sell_agg_orderbook, how='inner', on='Price', suffixes=('_buy', '_sell'))
-    aggregated_orderbooks["Delta"] = abs(aggregated_orderbooks["Total Quantity_buy"] - aggregated_orderbooks["Total Quantity_sell"])
-    aggregated_orderbooks["Qty_Sum"] = aggregated_orderbooks["Total Quantity_buy"] + aggregated_orderbooks["Total Quantity_sell"]
-    aggregated_orderbooks.sort_values(by=["Qty_Sum", "Delta"], ascending=[False, True], inplace=True)
+    aggregated_orderbooks["Qty_clear"] = 0
+    for index, row in aggregated_orderbooks.iterrows():
+        if row["Total Quantity_buy"] - row["Total Quantity_sell"] >= 0:
+            aggregated_orderbooks.loc[index, "Qty_clear"] = row["Total Quantity_sell"]
+        elif row["Total Quantity_buy"] - row["Total Quantity_sell"] < 0:
+            aggregated_orderbooks.loc[index, "Qty_clear"] = row["Total Quantity_buy"]
+    aggregated_orderbooks.sort_values(by=["Qty_clear"], ascending=[False], inplace=True)
     clearing_price = aggregated_orderbooks["Price"].iloc[0]
 
     # extract orders to only those that can be cleared
@@ -498,8 +532,8 @@ def open_auction_end(df_participants, buy_auction_orderbook, sell_auction_orderb
     to_clear_buy_orders = buy_auction_orderbook[available_buy_orders].sort_values(by=["Timestamp"], ascending=True)
     to_clear_sell_orders = sell_auction_orderbook[available_sell_orders].sort_values(by=["Timestamp"], ascending=True)
 
-    agg_buy_qty = to_clear_buy_orders["Quantity"].sum()
-    agg_sell_qty = to_clear_sell_orders["Quantity"].sum()
+    agg_buy_qty = aggregated_orderbooks["Total Quantity_buy"].iloc[0]
+    agg_sell_qty = aggregated_orderbooks["Total Quantity_sell"].iloc[0]
     if agg_buy_qty == agg_sell_qty:
         type_clear = "equal"
     elif agg_buy_qty > agg_sell_qty:
