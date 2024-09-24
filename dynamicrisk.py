@@ -56,7 +56,7 @@ def pnl_exposure_calculation (bot, key_figs, buy_orderbook, sell_orderbook, type
             profit_result = False
 
     # exposure calculation
-    exposure_score = (buy_exposure_score + sell_exposure_score) / 2     # aggregate both exposure scores, and divide by two to find average
+    exposure_score = abs((buy_exposure_score + sell_exposure_score) / 2)     # aggregate both exposure scores, and divide by two to find average
 
     # generate the result band based on the exposure score
     if exposure_score == 0:
@@ -67,6 +67,8 @@ def pnl_exposure_calculation (bot, key_figs, buy_orderbook, sell_orderbook, type
         exposure_result = 2                  # medium exposure
     elif exposure_score > 0.5:
         exposure_result = 3                  # high exposure
+    else:
+        exposure_result = 1
 
     return profit_result, exposure_result
 
